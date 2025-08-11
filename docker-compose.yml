@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  system-restore-toolkit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: system-restore-toolkit:latest
+    container_name: restore-toolkit
+    privileged: true  # Required for LVM operations
+    restart: unless-stopped
+    
+    volumes:
+      # Mount host filesystem for backup operations
+      - /:/host:ro
+      # Persistent storage for backups
+      - ./backups:/var/backups/system-restore-toolkit
+      # Persistent storage for logs
+      - ./logs:/var/log/system-restore-toolkit
+      # Docker socket (if needed for container operations)
+      - /var/run/docker.sock:/var/run/docker.sock
+    
+    environment:
+      - TZ=UTC
+      - BACKUP_RETENTION_DAYS=30
+      - LOG_LEVEL=INFO
+    
+    # Keep container running
+    tty: true
+    stdin_open: true
+    
+    labels:
+      - "traefik.enable=false"
+      - "com.docker.compose.project=system-restore-toolkit"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "system-restore-toolkit", "disk-usage"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  toolkit-backups:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./backups
+      
+  toolkit-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs
+
+networks:
+  default:
+    name: system-restore-toolkit-network

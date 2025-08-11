@@ -1,173 +1,304 @@
-# 🛡️ System Restore Toolkit
+# 🐳 System Restore Toolkit v2.0
 
-A comprehensive collection of system backup and restore point tools for Ubuntu Linux systems with LVM.
+A modernized, containerized system backup and restore toolkit for Ubuntu Linux systems with LVM support.
 
-## 🎯 Purpose
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/)
+[![Bash](https://img.shields.io/badge/bash-%23121011.svg?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 
-This toolkit provides multiple strategies for creating and managing system restore points:
-- **LVM Snapshots** (fast, space-efficient)
-- **Timeshift** (user-friendly, reliable)
-- **Full System Backups** (comprehensive disaster recovery)
-- **Configuration Backups** (quick setup restoration)
+## ✨ What's New in v2.0
+
+- 🐳 **Full Docker support** with containerized deployment
+- 🔧 **Refactored codebase** with improved error handling and logging
+- 📚 **Unified command interface** with the new `system-restore-toolkit` command
+- 🛡️ **Enhanced safety** with better validation and rollback capabilities
+- 📊 **Better monitoring** with detailed logging and system state reporting
+
+## 🚀 Quick Start
+
+### Option 1: Docker (Recommended)
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd system-restore-toolkit
+
+# Build and run with Docker
+docker-compose up -d
+
+# Use the toolkit
+docker exec -it restore-toolkit system-restore-toolkit help
+```
+
+### Option 2: System Installation
+```bash
+# Install system-wide
+./install.sh --system
+
+# Use from anywhere
+system-restore-toolkit help
+rt create-snapshot "My backup"
+```
+
+## 🎯 Features
+
+### 📸 LVM Snapshots
+- **Fast creation** and restoration
+- **Space-efficient** copy-on-write technology
+- **Instant rollback** capabilities
+
+### 💾 Full System Backups
+- **Complete system** backup and restore
+- **Incremental backups** with compression
+- **Disaster recovery** ready
+
+### 🕐 Timeshift Integration
+- **Automated scheduling** with Timeshift
+- **User-friendly interface** for system restoration
+- **BTRFS and ext4** filesystem support
+
+### 🐳 Docker Support
+- **Containerized toolkit** for consistent environments
+- **Host system access** for backup operations
+- **Portable deployment** across systems
+
+## 📖 Usage
+
+### Basic Commands
+```bash
+# Show help
+system-restore-toolkit help
+
+# Create snapshot with description
+system-restore-toolkit create-snapshot "Before system update"
+
+# List all snapshots
+system-restore-toolkit list-snapshots
+
+# Create full system backup
+system-restore-toolkit create-backup "Weekly backup"
+
+# Check disk usage
+system-restore-toolkit disk-usage
+
+# Generate system state report
+system-restore-toolkit system-state
+```
+
+### Short Aliases
+```bash
+# Use short alias
+rt help
+rt create-snapshot "Quick backup"
+
+# Direct commands
+snapshot-list
+backup-list
+disk-check
+```
+
+### Docker Commands
+```bash
+# Build Docker image
+system-restore-toolkit docker-build
+
+# Run in container
+system-restore-toolkit docker-run create-snapshot "Container backup"
+
+# Using docker-compose
+docker-compose exec system-restore-toolkit rt help
+```
+
+## 🛠️ Installation
+
+### Prerequisites
+- **Ubuntu 20.04+** (tested on Ubuntu 24.04)
+- **LVM setup** for snapshot functionality
+- **Sudo privileges** for system operations
+- **Docker** (optional, for containerized deployment)
+
+### Installation Methods
+
+#### 1. Automated Installation
+```bash
+# Check system requirements
+./install.sh --check
+
+# Install system-wide
+./install.sh --system
+
+# Setup Docker environment
+./install.sh --docker
+```
+
+#### 2. Manual Installation
+```bash
+# Copy to system directory
+sudo cp -r . /opt/system-restore-toolkit/
+
+# Create symlinks
+sudo ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/rt
+
+# Set permissions
+sudo chmod +x /opt/system-restore-toolkit/system-restore-toolkit
+```
+
+#### 3. Docker Installation
+```bash
+# Build image
+docker build -t system-restore-toolkit .
+
+# Run with host access
+docker run --rm -it --privileged \
+    -v /:/host \
+    system-restore-toolkit help
+```
 
 ## 📁 Project Structure
 
 ```
 system-restore-toolkit/
-├── README.md                      # This file
-├── RESTORE_POINT_GUIDE.md         # Complete strategy guide
-├── manage_restore_points.sh       # 🔧 Main management script
-├── scripts/
-│   ├── create_snapshot.sh         # Create LVM snapshots
-│   ├── restore_from_snapshot.sh   # Restore from LVM snapshots
-│   ├── full_system_backup.sh      # Complete system backup
-│   ├── current_system_state.sh    # Document system state
-│   └── setup_timeshift.sh         # Install/configure Timeshift
-├── configs/
-│   └── timeshift.json            # Timeshift configuration template
-└── backups/
-    └── README.md                 # Backup storage info
+├── 🐳 Docker Files
+│   ├── Dockerfile              # Container definition
+│   ├── docker-compose.yml      # Service orchestration
+│   └── .dockerignore          # Docker ignore rules
+│
+├── 🔧 Core Scripts
+│   ├── system-restore-toolkit  # Main entry point (NEW)
+│   ├── lib/common.sh          # Shared functions (NEW)
+│   └── manage_restore_points.sh # Legacy script
+│
+├── 📜 Individual Scripts
+│   ├── scripts/
+│   │   ├── create_snapshot.sh
+│   │   ├── restore_from_snapshot.sh
+│   │   ├── full_system_backup.sh
+│   │   ├── current_system_state.sh
+│   │   └── setup_timeshift.sh
+│
+├── ⚙️ Configuration
+│   └── configs/
+│       └── timeshift.json
+│
+├── 📊 Data Directories
+│   ├── backups/               # Backup storage
+│   └── logs/                  # Log files (NEW)
+│
+├── 🚀 Installation & Docs
+│   ├── install.sh            # Installation script (NEW)
+│   ├── README.md             # This file
+│   ├── RESTORE_POINT_GUIDE.md
+│   └── GLOBAL_ACCESS.md
+│
+└── 🛠️ Git & CI
+    ├── .gitignore
+    └── .dockerignore
 ```
 
-## 🚀 Quick Start
+## 🔧 Configuration
 
-### 1. Global Access (Works from anywhere!)
+### System Configuration (`/etc/system-restore-toolkit.conf`)
 ```bash
-# Super quick access with aliases
-rt help                    # Show all commands
-disk-check                 # Check disk usage
-backup-list               # List all backups
+# Directories
+BACKUP_DIR="/var/backups/system-restore-toolkit"
+LOG_DIR="/var/log/system-restore-toolkit"
 
-# Or use the full command
-restore-toolkit help
-restore-toolkit disk-usage
+# Default settings
+DEFAULT_SNAPSHOT_SIZE="5G"
+RETENTION_DAYS="30"
 ```
 
-### 2. Create Your First Restore Point
+### Docker Environment Variables
+```yaml
+environment:
+  - TZ=UTC
+  - BACKUP_RETENTION_DAYS=30
+  - LOG_LEVEL=INFO
+```
+
+## 📊 Monitoring & Logging
+
+### Log Files
+- **Main log**: `/var/log/system-restore-toolkit/toolkit-YYYYMMDD.log`
+- **Snapshots**: `/var/log/system-restore-toolkit/snapshots.log`
+- **Backups**: `/var/log/system-restore-toolkit/backups.log`
+
+### Health Checks
 ```bash
-# Using Timeshift (recommended - works from anywhere)
-sudo timeshift --create --comments "Initial restore point"
+# System status
+system-restore-toolkit disk-usage
 
-# Or using the toolkit (from anywhere)
-rt create-snapshot "Description here"
+# Docker health check
+docker-compose ps
 ```
 
-### 3. Check System Status (from anywhere)
+## 🆘 Emergency Recovery
+
+### From LVM Snapshot
 ```bash
-disk-check                 # Quick disk usage
-backup-list               # List all backups 
-snapshot-list             # List all snapshots
+# Boot from live media
+# Identify snapshot
+sudo lvs
+
+# Mount and restore
+sudo mkdir /mnt/snapshot
+sudo mount /dev/vg/snapshot-name /mnt/snapshot
+# Follow restoration guide...
 ```
 
-## 📚 Available Commands
+### From Full Backup
+```bash
+# Boot from live media
+# Extract backup
+sudo tar -xzf backup-file.tar.gz -C /mnt/restore/
+# Follow restoration guide...
+```
 
-### **Global Commands** (work from anywhere)
-
-| Global Command | Alias | Description |
-|----------------|-------|-------------|
-| `restore-toolkit help` | `rt help` | Show all available commands |
-| `restore-toolkit list-snapshots` | `snapshot-list` | List LVM snapshots |
-| `restore-toolkit list-backups` | `backup-list` | List full system backups |
-| `restore-toolkit create-snapshot` | `rt create-snapshot` | Create LVM snapshot |
-| `restore-toolkit create-backup` | `rt create-backup` | Create full backup |
-| `restore-toolkit disk-usage` | `disk-check` | Show disk usage info |
-
-### **Local Commands** (from project directory)
-
-| Local Command | Description |
-|---------------|-------------|
-| `./manage_restore_points.sh help` | Direct script access |
-| `./scripts/current_system_state.sh` | Document current system state |
-| `./restore-toolkit help` | Local launcher script |
-
-## ⚙️ System Requirements
-
-- **OS**: Ubuntu 22.04+ (tested on Ubuntu 24.04)
-- **Storage**: LVM setup (for snapshots)
-- **Privileges**: sudo access required
-- **Dependencies**: Automatically installed by setup scripts
-
-## 🛠️ Installation & Setup
-
-This toolkit is ready to use, but if you need to set up Timeshift:
+## 🔄 Migration from v1.0
 
 ```bash
-./scripts/setup_timeshift.sh
+# Backup existing configuration
+cp -r /old/system-restore-toolkit ~/backup-old-toolkit
+
+# Install v2.0
+./install.sh --system
+
+# Migrate backups
+sudo mv ~/backup-old-toolkit/backups/* /var/backups/system-restore-toolkit/
 ```
-
-## 📖 Documentation
-
-- **Complete Guide**: See `RESTORE_POINT_GUIDE.md`
-- **System State**: Run `./scripts/current_system_state.sh`
-
-## 🎯 Use Cases
-
-### Regular Development (from anywhere)
-```bash
-# Quick system check before changes
-disk-check
-
-# Before installing new software
-sudo timeshift --create --comments "Before installing Docker"
-
-# Create snapshot using toolkit
-rt create-snapshot "Before installing new AI framework"
-```
-
-### System Maintenance (from anywhere)
-```bash
-# Before major updates
-rt create-backup "Before Ubuntu upgrade"
-sudo timeshift --create --comments "Before system upgrade"
-
-# Check space before maintenance
-disk-check
-```
-
-### Project Deployment (from anywhere)
-```bash
-# Quick backup check before deployment
-backup-list
-
-# Create restore point
-sudo timeshift --create --comments "Before $(date) deployment"
-
-# Document current state (from project directory)
-cd ~/projects/system-restore-toolkit
-./scripts/current_system_state.sh > backups/deployment_$(date +%Y%m%d)_state.txt
-```
-
-## ⚠️ Important Notes
-
-1. **LVM Snapshots**: Require free space in volume group
-2. **Timeshift**: Works with any filesystem (recommended)
-3. **Full Backups**: Require external storage or sufficient disk space
-4. **Testing**: Always test restore procedures in non-production environment
-
-## 🆘 Emergency Restoration
-
-1. Boot from Ubuntu Live Media
-2. Navigate to this toolkit location
-3. Follow restoration instructions in `RESTORE_POINT_GUIDE.md`
-
-## 📊 System Compatibility
-
-- ✅ Ubuntu 24.04 Noble
-- ✅ LVM storage setup
-- ✅ Docker environments
-- ✅ AI/ML development systems
-- ✅ High-capacity systems (1TB+)
 
 ## 🤝 Contributing
 
-This toolkit was created specifically for the TensorCore development environment but can be adapted for other Ubuntu LVM systems.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test with both native and Docker installations
+5. Submit a pull request
 
 ## 📝 License
 
 Open source - adapt and modify as needed for your environment.
 
+## 🎯 Compatibility
+
+- ✅ **Ubuntu 24.04** Noble (primary)
+- ✅ **Ubuntu 22.04** Jammy
+- ✅ **Ubuntu 20.04** Focal
+- ✅ **Docker** environments
+- ✅ **LVM** storage systems
+- ✅ **Cloud instances** (AWS, GCP, Azure)
+- ✅ **Physical servers**
+
+## 📞 Support
+
+- 📖 Read the [Restore Point Guide](RESTORE_POINT_GUIDE.md)
+- 🔍 Check the logs: `system-restore-toolkit disk-usage`
+- 🐳 Docker issues: `docker logs restore-toolkit`
+
 ---
 
-**Created**: August 7, 2025  
-**System**: tensorcore (paulo@tensorcore)  
-**Environment**: Ubuntu 24.04, 24 cores, 125Gi RAM, 1.8TB storage
+**Version**: 2.0  
+**Created**: August 2025  
+**Environment**: Ubuntu 24.04, Docker-ready  
+**Status**: Production Ready ✅
+
+Built with ❤️ for reliable system administration

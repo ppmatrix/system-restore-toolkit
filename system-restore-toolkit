@@ -1,0 +1,306 @@
+#!/bin/bash
+
+# System Restore Toolkit - Main Entry Point
+# Version: 2.0
+# Enhanced with Docker support and improved error handling
+
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source common functions
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh"
+
+# Initialize toolkit
+init_toolkit
+
+show_help() {
+    cat << 'HELP'
+System Restore Toolkit v2.0
+============================
+
+USAGE:
+    system-restore-toolkit [COMMAND] [OPTIONS]
+
+COMMANDS:
+    help                    Show this help message
+    
+    Snapshot Management:
+    create-snapshot [DESC]  Create LVM snapshot with optional description
+    list-snapshots         List all LVM snapshots
+    remove-snapshot NAME   Remove specific LVM snapshot
+    restore-snapshot NAME  Restore from LVM snapshot
+    
+    Backup Management:
+    create-backup [DESC]    Create full system backup
+    list-backups           List all full system backups  
+    remove-backup NAME     Remove specific backup
+    
+    System Information:
+    disk-usage             Show disk usage information
+    system-state           Generate system state report
+    
+    Timeshift Integration:
+    setup-timeshift        Install and configure Timeshift
+    timeshift-create [DESC] Create Timeshift backup
+    
+    Container Operations:
+    docker-build           Build Docker container
+    docker-run [CMD]       Run toolkit in container
+
+ALIASES:
+    rt                     Short alias for system-restore-toolkit
+    snapshot-list         List snapshots
+    backup-list           List backups
+    disk-check            Check disk usage
+
+EXAMPLES:
+    system-restore-toolkit create-snapshot "Before system update"
+    rt list-snapshots
+    system-restore-toolkit disk-usage
+    system-restore-toolkit setup-timeshift
+
+For detailed information, see README.md and RESTORE_POINT_GUIDE.md
+HELP
+}
+
+create_snapshot() {
+    local description="${1:-Auto snapshot $(date)}"
+    local snapshot_name="restore-point-$(get_timestamp)"
+    
+    log_info "Creating LVM snapshot: $snapshot_name"
+    
+    check_sudo
+    check_lvm
+    
+    # Check for available space
+    if ! check_disk_space "/" 2; then
+        return 1
+    fi
+    
+    # Get root volume group and logical volume
+    local root_lv
+    root_lv=$(df / | awk 'NR==2 {print $1}' | sed 's|/dev/mapper/||')
+    
+    if [[ -z "$root_lv" ]]; then
+        log_error "Could not determine root logical volume"
+        return 1
+    fi
+    
+    # Extract VG and LV names
+    local vg_name
+    local lv_name
+    vg_name=$(echo "$root_lv" | cut -d'-' -f1)
+    lv_name=$(echo "$root_lv" | cut -d'-' -f2-)
+    
+    log_info "Creating snapshot of $vg_name/$lv_name"
+    
+    if sudo lvcreate -L5G -s -n "$snapshot_name" "/dev/$vg_name/$lv_name"; then
+        log_success "Snapshot created: $snapshot_name"
+        
+        # Log the snapshot details
+        echo "$(date '+%Y-%m-%d %H:%M:%S') | $snapshot_name | $description" >> "$LOG_DIR/snapshots.log"
+        
+        return 0
+    else
+        log_error "Failed to create snapshot"
+        return 1
+    fi
+}
+
+list_snapshots() {
+    log_info "LVM Snapshots:"
+    echo "=============="
+    
+    if command -v lvs &> /dev/null; then
+        local snapshots
+        snapshots=$(sudo lvs --noheadings -o lv_name,lv_attr | grep -E '\s+s' || true)
+        
+        if [[ -n "$snapshots" ]]; then
+            while read -r snapshot_info; do
+                local snapshot_name
+                snapshot_name=$(echo "$snapshot_info" | awk '{print $1}')
+                
+                local snapshot_size
+                snapshot_size=$(sudo lvs --noheadings -o lv_size --units G "$snapshot_name" | tr -d ' ')
+                
+                echo "   * $snapshot_name"
+                echo "     Size: $snapshot_size"
+            done <<< "$snapshots"
+        else
+            echo "   No snapshots found"
+        fi
+        
+        # Show snapshot log if exists
+        if [[ -f "$LOG_DIR/snapshots.log" ]]; then
+            echo ""
+            echo "Recent Snapshots:"
+            tail -n 5 "$LOG_DIR/snapshots.log" | while read -r line; do
+                echo "   $line"
+            done
+        fi
+    else
+        log_error "LVM tools not available"
+        return 1
+    fi
+}
+
+create_backup() {
+    local description="${1:-Full system backup $(date)}"
+    local backup_name="full-backup-$(get_timestamp).tar.gz"
+    local backup_path="$BACKUP_DIR/$backup_name"
+    
+    log_info "Creating full system backup: $backup_name"
+    
+    check_sudo
+    
+    # Check for available space (require at least 10GB)
+    if ! check_disk_space "$BACKUP_DIR" 10; then
+        return 1
+    fi
+    
+    log_info "Starting system backup (this may take a while)..."
+    
+    # Create backup with progress
+    if sudo tar --exclude='/proc/*' \
+               --exclude='/tmp/*' \
+               --exclude='/mnt/*' \
+               --exclude='/dev/*' \
+               --exclude='/sys/*' \
+               --exclude='/run/*' \
+               --exclude='/media/*' \
+               --exclude='/var/cache/*' \
+               --exclude='/var/tmp/*' \
+               --exclude="$BACKUP_DIR/*" \
+               -czf "$backup_path" / 2>/dev/null; then
+        
+        log_success "Backup created: $backup_name"
+        
+        # Log backup details
+        local backup_size
+        backup_size=$(du -h "$backup_path" | cut -f1)
+        echo "$(date '+%Y-%m-%d %H:%M:%S') | $backup_name | $backup_size | $description" >> "$LOG_DIR/backups.log"
+        
+        return 0
+    else
+        log_error "Failed to create backup"
+        return 1
+    fi
+}
+
+list_backups() {
+    log_info "Full System Backups:"
+    echo "===================="
+    
+    if [[ -d "$BACKUP_DIR" ]]; then
+        local backups
+        backups=$(find "$BACKUP_DIR" -name "full-backup-*.tar.gz" -type f 2>/dev/null | sort -r | head -10)
+        
+        if [[ -n "$backups" ]]; then
+            while read -r backup_file; do
+                if [[ -n "$backup_file" ]]; then
+                    local backup_name
+                    backup_name=$(basename "$backup_file")
+                    local backup_size
+                    backup_size=$(du -h "$backup_file" | cut -f1)
+                    
+                    echo "   * $backup_name"
+                    echo "     Size: $backup_size"
+                fi
+            done <<< "$backups"
+        else
+            echo "   No backups found"
+        fi
+        
+        # Show backup log if exists
+        if [[ -f "$LOG_DIR/backups.log" ]]; then
+            echo ""
+            echo "Recent Backups:"
+            tail -n 5 "$LOG_DIR/backups.log" | while read -r line; do
+                echo "   $line"
+            done
+        fi
+    else
+        echo "   Backup directory not found: $BACKUP_DIR"
+    fi
+}
+
+show_disk_usage() {
+    log_info "Disk Usage Information:"
+    echo "======================"
+    
+    echo ""
+    echo "Overall Disk Usage:"
+    df -h / /var /tmp 2>/dev/null | grep -v tmpfs || true
+    
+    echo ""
+    echo "LVM Volume Groups:"
+    if command -v vgs &> /dev/null; then
+        sudo vgs --units G 2>/dev/null || echo "   No LVM volume groups found"
+    else
+        echo "   LVM tools not available"
+    fi
+    
+    echo ""
+    echo "Memory Usage:"
+    free -h
+    
+    if [[ -d "$BACKUP_DIR" ]]; then
+        echo ""
+        echo "Backup Directory Usage:"
+        du -sh "$BACKUP_DIR" 2>/dev/null || echo "   Cannot access backup directory"
+    fi
+}
+
+# Parse command line arguments
+case "${1:-help}" in
+    help|--help|-h)
+        show_help
+        ;;
+    create-snapshot)
+        create_snapshot "${2:-}"
+        ;;
+    list-snapshots|snapshot-list)
+        list_snapshots
+        ;;
+    create-backup)
+        create_backup "${2:-}"
+        ;;
+    list-backups|backup-list)
+        list_backups
+        ;;
+    disk-usage|disk-check)
+        show_disk_usage
+        ;;
+    system-state)
+        "${SCRIPT_DIR}/scripts/current_system_state.sh"
+        ;;
+    setup-timeshift)
+        "${SCRIPT_DIR}/scripts/setup_timeshift.sh"
+        ;;
+    timeshift-create)
+        if command -v timeshift &> /dev/null; then
+            sudo timeshift --create --comments "${2:-Backup created via toolkit}"
+        else
+            log_error "Timeshift not installed. Run: system-restore-toolkit setup-timeshift"
+            exit 1
+        fi
+        ;;
+    docker-build)
+        log_info "Building Docker container..."
+        docker build -t system-restore-toolkit .
+        ;;
+    docker-run)
+        shift
+        docker run --rm -it --privileged \
+               -v /:/host \
+               -v /var/run/docker.sock:/var/run/docker.sock \
+               system-restore-toolkit "$@"
+        ;;
+    *)
+        log_error "Unknown command: $1"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac
