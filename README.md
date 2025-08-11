@@ -13,6 +13,13 @@ A modernized, containerized system backup and restore toolkit for Ubuntu Linux s
 
 ## ✨ What's New in v2.0
 
+### 🌐 **Web Interface** (NEW!)
+- Modern web UI for managing backups and snapshots
+- Real-time system monitoring and task progress
+- User-friendly forms for backup creation
+- Responsive design for mobile and desktop
+- RESTful API for integration
+
 - 🐳 **Full Docker support** with containerized deployment
 - 🔧 **Refactored codebase** with improved error handling and logging
 - 📚 **Unified command interface** with the new `system-restore-toolkit` command

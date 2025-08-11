@@ -1,0 +1,97 @@
+/* System Restore Toolkit Web Interface Styles */
+
+body {
+    background-color: #f8f9fa;
+}
+
+.navbar-brand i {
+    margin-right: 8px;
+}
+
+.nav-link i {
+    margin-right: 5px;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+.card-header i {
+    margin-right: 8px;
+}
+
+pre {
+    font-size: 0.85rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.btn i {
+    margin-right: 5px;
+}
+
+.alert i {
+    margin-right: 8px;
+}
+
+.list-unstyled li {
+    padding: 5px 0;
+}
+
+.modal-title i {
+    margin-right: 8px;
+}
+
+/* Status indicators */
+.status-success {
+    color: #28a745;
+}
+
+.status-warning {
+    color: #ffc107;
+}
+
+.status-danger {
+    color: #dc3545;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+}
+
+/* Custom scrollbars */
+pre::-webkit-scrollbar {
+    width: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .d-flex.justify-content-between > *:last-child {
+        margin-top: 1rem;
+        align-self: stretch;
+    }
+}

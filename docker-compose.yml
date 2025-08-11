@@ -29,17 +29,41 @@ services:
     tty: true
     stdin_open: true
     
-    labels:
-      - "traefik.enable=false"
-      - "com.docker.compose.project=system-restore-toolkit"
+    networks:
+      - toolkit-network
+
+  web-interface:
+    build:
+      context: ./web-interface
+      dockerfile: Dockerfile
+    image: system-restore-toolkit-web:latest
+    container_name: restore-toolkit-web
+    restart: unless-stopped
     
-    # Health check
-    healthcheck:
-      test: ["CMD", "system-restore-toolkit", "disk-usage"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    ports:
+      - "5000:5000"
+    
+    volumes:
+      # Access to toolkit scripts and logs
+      - .:/toolkit:ro
+      - ./logs:/toolkit/logs:ro
+      - ./backups:/toolkit/backups:ro
+    
+    environment:
+      - TZ=UTC
+      - FLASK_ENV=production
+      - FLASK_DEBUG=false
+    
+    depends_on:
+      - system-restore-toolkit
+    
+    networks:
+      - toolkit-network
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.restore-toolkit-web.rule=Host(`restore-toolkit.local`)"
+      - "traefik.http.services.restore-toolkit-web.loadbalancer.server.port=5000"
 
 volumes:
   toolkit-backups:
@@ -57,5 +81,6 @@ volumes:
       device: ./logs
 
 networks:
-  default:
+  toolkit-network:
     name: system-restore-toolkit-network
+    driver: bridge
