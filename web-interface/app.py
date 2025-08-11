@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-System Restore Toolkit - Web Interface
-A modern web UI for managing system backups and snapshots
+System Restore Toolkit - Web Interface (Backups & Timeshift Edition)
+Focus: Full System Backups + Timeshift Integration
 """
 
 import os
@@ -17,8 +17,8 @@ app = Flask(__name__)
 app.secret_key = 'system-restore-toolkit-secret-key-change-in-production'
 
 # Configuration
-TOOLKIT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TOOLKIT_CMD = os.path.join(TOOLKIT_PATH, 'system-restore-toolkit')
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TOOLKIT_CMD = os.path.join(SCRIPT_DIR, 'system-restore-toolkit')
 
 class TaskManager:
     """Simple task manager for long-running operations"""
@@ -41,7 +41,7 @@ class TaskManager:
                     stdout=subprocess.PIPE, 
                     stderr=subprocess.PIPE,
                     text=True,
-                    cwd=TOOLKIT_PATH
+                    cwd=SCRIPT_DIR
                 )
                 
                 while True:
@@ -78,7 +78,7 @@ def run_toolkit_command(command):
             [TOOLKIT_CMD] + command,
             capture_output=True,
             text=True,
-            cwd=TOOLKIT_PATH,
+            cwd=SCRIPT_DIR,
             timeout=30
         )
         return {
@@ -99,21 +99,62 @@ def run_toolkit_command(command):
             'error': str(e)
         }
 
+def get_timeshift_snapshots():
+    """Get Timeshift snapshots information"""
+    try:
+        result = subprocess.run(
+            ['sudo', 'timeshift', '--list', '--scripted'],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            lines = result.stdout.strip().split('\n')
+            snapshots = []
+            summary_lines = []
+            
+            for line in lines:
+                line = line.strip()
+                if line and line[0].isdigit():  # Snapshot lines
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        snapshots.append({
+                            'num': parts[0],
+                            'name': parts[2],
+                            'tags': parts[3] if len(parts) > 3 else '',
+                            'description': ' '.join(parts[4:]) if len(parts) > 4 else ''
+                        })
+                elif 'snapshots' in line or 'free' in line or 'Status' in line:
+                    summary_lines.append(line)
+            
+            return {
+                'success': True,
+                'snapshots': snapshots,
+                'summary': '\n'.join(summary_lines)
+            }
+        else:
+            return {
+                'success': False,
+                'error': result.stderr or 'Failed to list Timeshift snapshots',
+                'snapshots': []
+            }
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e),
+            'snapshots': []
+        }
+
 @app.route('/')
 def dashboard():
-    """Main dashboard"""
-    # Get system status
+    """Main dashboard - Focus on Backups & Timeshift"""
     disk_info = run_toolkit_command(['disk-usage'])
+    backups_info = run_toolkit_command(['list-backups'])
     
     return render_template('dashboard.html', 
-                         disk_info=disk_info)
-
-@app.route('/snapshots')
-def snapshots():
-    """LVM Snapshots management"""
-    snapshots_info = run_toolkit_command(['list-snapshots'])
-    return render_template('snapshots.html', 
-                         snapshots_info=snapshots_info)
+                         disk_info=disk_info,
+                         backups_info=backups_info)
 
 @app.route('/backups')
 def backups():
@@ -121,21 +162,6 @@ def backups():
     backups_info = run_toolkit_command(['list-backups'])
     return render_template('backups.html', 
                          backups_info=backups_info)
-
-@app.route('/create-snapshot', methods=['POST'])
-def create_snapshot():
-    """Create new LVM snapshot"""
-    description = request.form.get('description', 'Web UI snapshot')
-    
-    task_id = f"snapshot_{int(time.time())}"
-    task_manager.start_task(
-        task_id,
-        [TOOLKIT_CMD, 'create-snapshot', description],
-        f"Creating snapshot: {description}"
-    )
-    
-    flash(f'Snapshot creation started. Task ID: {task_id}', 'info')
-    return redirect(url_for('snapshots'))
 
 @app.route('/create-backup', methods=['POST'])
 def create_backup():
@@ -154,8 +180,9 @@ def create_backup():
 
 @app.route('/timeshift')
 def timeshift():
-    """Timeshift management"""
-    return render_template('timeshift.html')
+    """Timeshift management with real snapshot data"""
+    timeshift_info = get_timeshift_snapshots()
+    return render_template('timeshift.html', timeshift_info=timeshift_info)
 
 @app.route('/create-timeshift', methods=['POST'])
 def create_timeshift():
@@ -174,7 +201,7 @@ def create_timeshift():
 @app.route('/logs')
 def logs():
     """View system logs"""
-    log_dir = os.path.join(TOOLKIT_PATH, 'logs')
+    log_dir = os.path.join(SCRIPT_DIR, 'logs')
     log_files = []
     
     if os.path.exists(log_dir):
@@ -191,15 +218,15 @@ def logs():
 
 @app.route('/api/status')
 def api_status():
-    """API endpoint for system status"""
+    """API endpoint for system status - No LVM snapshots"""
     disk_info = run_toolkit_command(['disk-usage'])
-    snapshots_info = run_toolkit_command(['list-snapshots'])
     backups_info = run_toolkit_command(['list-backups'])
+    timeshift_info = get_timeshift_snapshots()
     
     return jsonify({
         'disk': disk_info,
-        'snapshots': snapshots_info,
-        'backups': backups_info
+        'backups': backups_info,
+        'timeshift': timeshift_info
     })
 
 @app.route('/api/task/<task_id>')
@@ -217,10 +244,18 @@ if __name__ == '__main__':
         print(f"Error: Toolkit not found at {TOOLKIT_CMD}")
         sys.exit(1)
     
-    print("🌐 System Restore Toolkit Web Interface")
-    print("=====================================")
+    print("🌐 System Restore Toolkit Web Interface (Backups & Timeshift)")
+    print("=============================================================")
     print("Starting web server...")
-    print(f"Toolkit path: {TOOLKIT_PATH}")
+    print(f"Toolkit path: {SCRIPT_DIR}")
     print("Access the web interface at: http://localhost:5000")
+    print("")
+    print("✅ Features:")
+    print("   • 💾 Full System Backups")  
+    print("   • 🕐 Timeshift Integration")
+    print("   • 📋 Log Management")
+    print("   • 📊 System Monitoring")
+    print("")
+    print("❌ Removed: LVM Snapshots (insufficient volume group space)")
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
