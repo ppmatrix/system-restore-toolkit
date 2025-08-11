@@ -5,7 +5,7 @@ Thank you for your interest in contributing to the System Restore Toolkit! This 
 ## 🚀 Quick Start
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR-USERNAME/system-restore-toolkit.git`
+2. Clone your fork: `git clone https://github.com/ppmatrix/system-restore-toolkit.git`
 3. Create a feature branch: `git checkout -b feature/your-feature-name`
 4. Make your changes
 5. Test thoroughly (both native and Docker)
@@ -16,7 +16,7 @@ Thank you for your interest in contributing to the System Restore Toolkit! This 
 ### Native Development
 ```bash
 # Clone and setup
-git clone https://github.com/YOUR-USERNAME/system-restore-toolkit.git
+git clone https://github.com/ppmatrix/system-restore-toolkit.git
 cd system-restore-toolkit
 
 # Test installation
