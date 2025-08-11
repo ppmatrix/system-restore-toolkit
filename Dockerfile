@@ -10,42 +10,10 @@ ENV TZ=UTC
 
 # Install required packages
 RUN apt-get update && apt-get install -y \
-    # Core tools
-    bash \
-    coreutils \
-    util-linux \
-    # LVM tools
-    lvm2 \
-    # Backup tools
-    tar \
-    gzip \
-    rsync \
-    # System monitoring
-    lsof \
-    htop \
-    iotop \
-    # Network tools
-    curl \
-    wget \
-    # Text processing
-    grep \
-    sed \
-    awk \
-    # File operations
-    findutils \
-    # Timeshift (if available in repos)
-    software-properties-common \
-    # Cleanup
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Try to install Timeshift from PPA (optional)
-RUN add-apt-repository -y ppa:teejee2008/timeshift && \
-    apt-get update && \
-    apt-get install -y timeshift && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* || \
-    echo "Timeshift not available, skipping..."
+    bash coreutils util-linux lvm2 tar gzip rsync \
+    lsof htop iotop curl wget grep sed gawk findutils \
+    lsb-release sudo && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create toolkit user
 RUN useradd -m -s /bin/bash toolkit && \
@@ -54,13 +22,7 @@ RUN useradd -m -s /bin/bash toolkit && \
 # Create necessary directories
 RUN mkdir -p /opt/system-restore-toolkit \
              /var/backups/system-restore-toolkit \
-             /var/log/system-restore-toolkit \
-             /etc/system-restore-toolkit
-
-# Set permissions
-RUN chown -R toolkit:toolkit /opt/system-restore-toolkit \
-                              /var/backups/system-restore-toolkit \
-                              /var/log/system-restore-toolkit
+             /var/log/system-restore-toolkit
 
 # Copy toolkit files
 COPY . /opt/system-restore-toolkit/
@@ -69,78 +31,27 @@ COPY . /opt/system-restore-toolkit/
 WORKDIR /opt/system-restore-toolkit
 
 # Make scripts executable
-RUN chmod +x system-restore-toolkit \
-             manage_restore_points.sh \
-             restore-toolkit \
-             switch-display-mode.sh \
-             scripts/*.sh \
-             lib/common.sh
+RUN chmod +x system-restore-toolkit manage_restore_points.sh \
+             restore-toolkit switch-display-mode.sh \
+             scripts/*.sh lib/common.sh
 
 # Create symlinks for global access
 RUN ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/system-restore-toolkit && \
-    ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/rt && \
-    ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/snapshot-list && \
-    ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/backup-list && \
-    ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/disk-check
+    ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/rt
 
-# Create default configuration
-RUN cat > /etc/system-restore-toolkit.conf << 'CONFIG'
-# System Restore Toolkit Configuration
-# Generated for Docker environment
+# Create configuration
+RUN echo 'BACKUP_DIR="/var/backups/system-restore-toolkit"' > /etc/system-restore-toolkit.conf && \
+    echo 'LOG_DIR="/var/log/system-restore-toolkit"' >> /etc/system-restore-toolkit.conf
 
-# Directories
-BACKUP_DIR="/var/backups/system-restore-toolkit"
-LOG_DIR="/var/log/system-restore-toolkit"
-
-# Default settings
-DEFAULT_SNAPSHOT_SIZE="5G"
-RETENTION_DAYS="30"
-
-# Host mount point (when running in container)
-HOST_ROOT="/host"
-CONFIG
-
-# Create entrypoint script
-RUN cat > /usr/local/bin/toolkit-entrypoint << 'ENTRYPOINT'
-#!/bin/bash
-set -euo pipefail
-
-echo "System Restore Toolkit v2.0 - Docker Edition"
-echo "============================================="
-
-# Check if running with proper privileges
-if [[ ! -d /host/proc ]]; then
-    echo "WARNING: Host filesystem not mounted at /host"
-    echo "For full functionality, run with: -v /:/host"
-fi
-
-# Check if running privileged
-if [[ ! -c /dev/mapper/control ]]; then
-    echo "WARNING: LVM device mapper not accessible"
-    echo "For LVM snapshots, run with: --privileged"
-fi
-
-# If no command provided, show help
-if [[ $# -eq 0 ]]; then
-    exec system-restore-toolkit help
-fi
-
-# Execute the command
-exec system-restore-toolkit "$@"
-ENTRYPOINT
-
-RUN chmod +x /usr/local/bin/toolkit-entrypoint
+# Create entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD system-restore-toolkit disk-usage > /dev/null || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD system-restore-toolkit disk-usage >/dev/null 2>&1 || exit 1
 
-# Set the entrypoint
-ENTRYPOINT ["/usr/local/bin/toolkit-entrypoint"]
-
-# Default command
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["help"]
 
-# Metadata
-EXPOSE 8080/tcp
 VOLUME ["/var/backups/system-restore-toolkit", "/var/log/system-restore-toolkit"]
