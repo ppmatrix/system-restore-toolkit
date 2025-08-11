@@ -29,3 +29,4 @@ timeshift/
 # Local environment files
 .env
 .env.local
+__pycache__/
