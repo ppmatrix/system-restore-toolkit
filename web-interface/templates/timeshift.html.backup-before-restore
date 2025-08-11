@@ -82,10 +82,7 @@
                                                             title="Show snapshot details">
                                                         <i class="fas fa-info-circle"></i>
                                                     </button>
-                                                    <button class="btn btn-sm btn-warning ms-1" onclick="confirmRestoreSnapshot('{{ snapshot.name }}')"
-                                                            title="Restore from this snapshot">
-                                                        <i class="fas fa-undo"></i>
-                                                    </button>
+                                                </td>
                                             </tr>
                                             {% endif %}
                                         {% endfor %}
@@ -112,6 +109,52 @@
         </div>
     </div>
 
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Timeshift Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Timeshift Integration</h6>
+                        <p class="mb-2">Timeshift creates system snapshots that can be easily restored using the Timeshift GUI or command line.</p>
+                        <p class="mb-0">This web interface allows you to create and delete Timeshift backups. For restoration, use the Timeshift application for safety.</p>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-outline-primary" onclick="checkTimeshiftStatus()">
+                            <i class="fas fa-search"></i> Check Timeshift Status
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="openTimeshiftGUI()">
+                            <i class="fas fa-external-link-alt"></i> Open Timeshift GUI
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-star"></i> Timeshift Benefits</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Fast incremental snapshots</li>
+                        <li><i class="fas fa-check text-success"></i> Easy system restoration</li>
+                        <li><i class="fas fa-check text-success"></i> Automatic scheduling</li>
+                        <li><i class="fas fa-check text-success"></i> GUI and CLI interface</li>
+                        <li><i class="fas fa-check text-success"></i> Space-efficient</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
                 <div class="card-header">
                     <h5><i class="fas fa-terminal"></i> Timeshift Commands</h5>
                 </div>
@@ -184,59 +227,6 @@ sudo timeshift --delete-all</pre>
     </div>
 </div>
 
-<!-- Restore Confirmation Modal -->
-<div class="modal fade" id="restoreSnapshotModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> DANGER: System Restore</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
-                    <h5><i class="fas fa-skull-crossbones"></i> CRITICAL WARNING</h5>
-                    <p><strong>This action will completely restore your system to a previous state!</strong></p>
-                    <ul class="mb-0">
-                        <li>ALL current data and changes will be LOST</li>
-                        <li>System will reboot automatically during restore</li>
-                        <li>This operation CANNOT be undone</li>
-                        <li>Make sure you have backups of important data</li>
-                    </ul>
-                </div>
-                
-                <div class="alert alert-warning">
-                    <h6><i class="fas fa-info-circle"></i> Snapshot to Restore:</h6>
-                    <p><code id="snapshotToRestore"></code></p>
-                </div>
-                
-                <div class="alert alert-info">
-                    <h6><i class="fas fa-terminal"></i> Manual Restoration (Recommended)</h6>
-                    <p>For maximum safety, restore manually from terminal:</p>
-                    <pre class="bg-dark text-light p-2" id="restoreCommand"></pre>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="confirmationText" class="form-label">
-                        <strong>Type "I UNDERSTAND THE RISKS" to proceed:</strong>
-                    </label>
-                    <input type="text" class="form-control" id="confirmationText" name="confirmation" 
-                           placeholder="I UNDERSTAND THE RISKS" autocomplete="off">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel (Recommended)</button>
-                <form id="restoreForm" method="POST" action="{{ url_for('restore_timeshift') }}" style="display: inline;">
-                    <input type="hidden" id="restoreSnapshotName" name="snapshot_name" value="">
-                    <input type="hidden" id="restoreConfirmation" name="confirmation" value="">
-                    <button type="button" class="btn btn-danger" onclick="submitRestore()">
-                        <i class="fas fa-undo"></i> Show Restore Command
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteSnapshotModal" tabindex="-1">
     <div class="modal-dialog">
@@ -267,71 +257,39 @@ sudo timeshift --delete-all</pre>
 </div>
 
 <script>
-console.log("Timeshift page JavaScript loaded");
-
-// Restore function
-function confirmRestoreSnapshot(snapshotName) {
-    console.log("Restore button clicked for:", snapshotName);
-    try {
-        document.getElementById("snapshotToRestore").textContent = snapshotName;
-        document.getElementById("restoreSnapshotName").value = snapshotName;
-        document.getElementById("restoreCommand").textContent = "sudo timeshift --restore --snapshot \"" + snapshotName + "\"";
-        document.getElementById("confirmationText").value = "";
-        
-        const modalElement = document.getElementById("restoreSnapshotModal");
-        if (modalElement) {
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        } else {
-            alert("Restore command for " + snapshotName + ":\n\nsudo timeshift --restore --snapshot \"" + snapshotName + "\"\n\nIMPORTANT: This will restore your system and reboot automatically!");
-        }
-    } catch (error) {
-        console.error("Error:", error);
-        alert("Restore command for " + snapshotName + ":\n\nsudo timeshift --restore --snapshot \"" + snapshotName + "\"\n\nIMPORTANT: This will restore your system and reboot automatically!");
-    }
-}
-
-// Submit restore function
-function submitRestore() {
-    const confirmationText = document.getElementById("confirmationText").value;
-    const expectedText = "I UNDERSTAND THE RISKS";
-    
-    if (confirmationText !== expectedText) {
-        alert("Please type the exact confirmation text: " + expectedText);
-        return;
-    }
-    
-    const snapshotName = document.getElementById("restoreSnapshotName").value;
-    const command = "sudo timeshift --restore --snapshot \"" + snapshotName + "\"";
-    
-    alert("RESTORE COMMAND:\n\n" + command + "\n\nIMPORTANT WARNINGS:\n• This will completely restore your system\n• All current data changes will be LOST\n• System will reboot automatically\n• Run this command in your terminal");
-    
-    console.log("Restore command for", snapshotName + ":", command);
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById("restoreSnapshotModal"));
-    if (modal) {
-        modal.hide();
-    }
-}
-
-// Other functions
 function refreshSnapshots() {
     location.reload();
 }
 
 function confirmDeleteSnapshot(snapshotName) {
-    document.getElementById("snapshotToDelete").textContent = snapshotName;
-    document.getElementById("deleteSnapshotName").value = snapshotName;
-    const modal = new bootstrap.Modal(document.getElementById("deleteSnapshotModal"));
+    document.getElementById('snapshotToDelete').textContent = snapshotName;
+    document.getElementById('deleteSnapshotName').value = snapshotName;
+    const modal = new bootstrap.Modal(document.getElementById('deleteSnapshotModal'));
     modal.show();
 }
 
 function showSnapshotInfo(snapshotName) {
-    alert("Snapshot: " + snapshotName + "\n\nFor detailed information, use:\nsudo timeshift --list");
+    // This could be expanded to show detailed snapshot information
+    alert(`Snapshot: ${snapshotName}\n\nFor detailed information, use:\nsudo timeshift --list`);
 }
 
+function checkTimeshiftStatus() {
+    fetch('/api/timeshift-info')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Timeshift Status: ${data.summary}\nSnapshots: ${data.snapshots.length}`);
+            } else {
+                alert(`Timeshift Status Check Failed: ${data.error || 'Unknown error'}`);
+            }
+        })
+        .catch(error => {
+            alert('Error checking Timeshift status: ' + error);
+        });
+}
 
-
-console.log("All JavaScript functions loaded successfully");
+function openTimeshiftGUI() {
+    alert('To open Timeshift GUI, run: sudo timeshift-gtk\n\nNote: This requires a desktop environment and X11/Wayland display.');
+}
 </script>
 {% endblock %}

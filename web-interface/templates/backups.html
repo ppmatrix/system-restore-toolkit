@@ -3,57 +3,135 @@
 {% block title %}Full System Backups - System Restore Toolkit{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1><i class="fas fa-archive"></i> Full System Backups</h1>
-            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#createBackupModal">
-                <i class="fas fa-plus"></i> Create Backup
-            </button>
-        </div>
-        <p class="lead">Manage complete system backups for disaster recovery</p>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-list"></i> Available Backups</h5>
-            </div>
-            <div class="card-body">
-                {% if backups_info.success %}
-                    <pre class="bg-light p-3">{{ backups_info.output }}</pre>
-                {% else %}
-                    <div class="alert alert-danger">
-                        <strong>Error loading backups:</strong> {{ backups_info.error }}
-                    </div>
-                {% endif %}
-                
-                <div class="mt-3">
-                    <button class="btn btn-outline-secondary" onclick="location.reload()">
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1><i class="fas fa-archive"></i> Full System Backups</h1>
+                <div>
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#createBackupModal">
+                        <i class="fas fa-plus"></i> Create Backup
+                    </button>
+                    <button class="btn btn-outline-primary ms-2" onclick="refreshBackups()">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
                 </div>
             </div>
+            <p class="lead">Complete system backups for disaster recovery</p>
         </div>
     </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5><i class="fas fa-info-circle"></i> Backup Information</h5>
+    <!-- Backup Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Available Backups</h5>
+                    {% if backups_info and backups_info.success %}
+                        <small class="text-muted">{{ backups_info.summary }}</small>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if backups_info and backups_info.success %}
+                        {% if backups_info.backups|length > 0 %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Size</th>
+                                            <th>Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="backupsTableBody">
+                                        {% for backup in backups_info.backups %}
+                                            <tr>
+                                                <td>{{ loop.index }}</td>
+                                                <td>
+                                                    <code>{{ backup.name }}</code>
+                                                    <span class="badge bg-primary ms-2">Full</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-warning">{{ backup.type }}</span>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ backup.size }}</strong>
+                                                </td>
+                                                <td>{{ backup.date }}</td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <button class="btn btn-sm btn-outline-info" onclick="showBackupDetails('{{ backup.filename }}', '{{ backup.name }}', '{{ backup.size }}', '{{ backup.date }}')" title="View Details">
+                                                            <i class="fas fa-info-circle"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-warning" onclick="showRestoreInstructions('{{ backup.filename }}')" title="Restore Instructions">
+                                                            <i class="fas fa-undo"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger" onclick="showDeleteBackupModal('{{ backup.filename }}', '{{ backup.name }}')" title="Delete Backup">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>No backups found.</strong> Create your first backup to get started.
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Error loading backups:</strong> {{ backups_info.error if backups_info.error else 'Unknown error' }}
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-            <div class="card-body">
-                <ul class="list-unstyled">
-                    <li><i class="fas fa-check-circle text-success"></i> <strong>Complete Protection:</strong> Full system backup including all user data and configurations</li>
-                    <li><i class="fas fa-check-circle text-success"></i> <strong>Disaster Recovery:</strong> Restore entire system from complete backup</li>
-                    <li><i class="fas fa-check-circle text-success"></i> <strong>Compressed Storage:</strong> Backups are compressed to save storage space</li>
-                    <li><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Time Intensive:</strong> Full backups take longer to create and restore</li>
-                    <li><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Storage Space:</strong> Requires significant disk space for backup storage</li>
-                </ul>
+        </div>
+    </div>
+
+    <!-- Storage Status -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-hdd"></i> Storage Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <strong>Backup Location:</strong><br>
+                            <code>/home/paulo/projects/system-restore-toolkit/backups/</code>
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>Format:</strong><br>
+                            <span class="badge bg-secondary">TAR.GZ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-shield-alt"></i> Backup Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-0">
+                        <small>
+                            <strong><i class="fas fa-exclamation-triangle"></i> Important:</strong><br>
+                            • Full system backups require significant disk space<br>
+                            • Restore operations should be performed carefully<br>
+                            • Always verify backup integrity before relying on them
+                        </small>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -63,37 +141,211 @@
 <div class="modal fade" id="createBackupModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Create New Backup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <form method="POST" action="{{ url_for('create_backup') }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Create Full System Backup</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="backupDescription" class="form-label">Backup Description</label>
-                        <input type="text" class="form-control" id="backupDescription" name="description" 
-                               placeholder="e.g., Weekly backup before maintenance" required>
-                        <div class="form-text">Provide a meaningful description to identify this backup later.</div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        This will create a complete system backup. The process may take several minutes depending on your system size.
                     </div>
-                    
-                    <div class="alert alert-warning">
-                        <h6><i class="fas fa-exclamation-triangle"></i> Important Notes:</h6>
-                        <ul class="mb-0">
-                            <li>Full backups can take 30 minutes to several hours depending on system size</li>
-                            <li>Ensure sufficient disk space (at least 50% of system size)</li>
-                            <li>System performance may be impacted during backup creation</li>
-                            <li>Backup will be stored in compressed format (.tar.gz)</li>
-                        </ul>
+                    <div class="mb-3">
+                        <label for="backupDescription" class="form-label">Description (Optional)</label>
+                        <input type="text" class="form-control" name="description" id="backupDescription" 
+                               placeholder="e.g., Before system update">
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-archive"></i> Create Backup
+                        <i class="fas fa-play"></i> Start Backup
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Backup Details Modal -->
+<div class="modal fade" id="backupDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-info-circle"></i> Backup Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="backupDetailsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Restore Instructions Modal -->
+<div class="modal fade" id="restoreInstructionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-undo"></i> Restore Instructions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="restoreInstructionsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Backup Modal -->
+<div class="modal fade" id="deleteBackupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger"><i class="fas fa-trash"></i> Delete Backup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="deleteBackupContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBackup">
+                    <i class="fas fa-trash"></i> Delete Backup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentBackupFile = '';
+
+function refreshBackups() {
+    location.reload();
+}
+
+function showBackupDetails(filename, name, size, date) {
+    document.getElementById('backupDetailsContent').innerHTML = `
+        <div class="row">
+            <div class="col-sm-4"><strong>Filename:</strong></div>
+            <div class="col-sm-8"><code>${filename}</code></div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-sm-4"><strong>Display Name:</strong></div>
+            <div class="col-sm-8">${name}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-sm-4"><strong>Size:</strong></div>
+            <div class="col-sm-8"><strong>${size}</strong></div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-sm-4"><strong>Date Created:</strong></div>
+            <div class="col-sm-8">${date}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-sm-4"><strong>Type:</strong></div>
+            <div class="col-sm-8">Full System Backup</div>
+        </div>
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle"></i>
+            This is a complete system backup created by the System Restore Toolkit.
+        </div>
+    `;
+    new bootstrap.Modal(document.getElementById('backupDetailsModal')).show();
+}
+
+function showRestoreInstructions(filename) {
+    document.getElementById('restoreInstructionsContent').innerHTML = `
+        <div class="alert alert-danger">
+            <h6><i class="fas fa-exclamation-triangle"></i> Critical Warning</h6>
+            Restoring a backup will <strong>overwrite your current system</strong>. This operation cannot be undone.
+            Make sure you have another recent backup before proceeding.
+        </div>
+        
+        <h6><i class="fas fa-terminal"></i> Manual Restore Process</h6>
+        <p>For security reasons, backup restoration must be performed manually via terminal:</p>
+        
+        <div class="bg-dark text-light p-3 rounded">
+            <pre class="text-light mb-0"><code># Navigate to backup directory
+cd /home/paulo/projects/system-restore-toolkit/backups/
+
+# Extract the backup (this will take time)
+sudo tar -xzf ${filename}
+
+# Follow the extracted restore instructions
+# or contact your system administrator</code></pre>
+        </div>
+        
+        <div class="alert alert-warning mt-3">
+            <h6><i class="fas fa-shield-alt"></i> Safety Recommendations</h6>
+            <ul class="mb-0">
+                <li>Boot from a live USB/CD for full system restore</li>
+                <li>Ensure you have enough free disk space</li>
+                <li>Verify backup integrity before restoration</li>
+                <li>Have a recovery plan ready</li>
+            </ul>
+        </div>
+    `;
+    new bootstrap.Modal(document.getElementById('restoreInstructionsModal')).show();
+}
+
+function showDeleteBackupModal(filename, name) {
+    currentBackupFile = filename;
+    document.getElementById('deleteBackupContent').innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Warning:</strong> This action cannot be undone.
+        </div>
+        <p>Are you sure you want to delete the following backup?</p>
+        <div class="bg-light p-3 rounded">
+            <strong>Name:</strong> ${name}<br>
+            <strong>File:</strong> <code>${filename}</code>
+        </div>
+        <p class="text-muted mt-2">
+            <small>Note: For security reasons, backup deletion requires manual terminal access.</small>
+        </p>
+    `;
+    new bootstrap.Modal(document.getElementById('deleteBackupModal')).show();
+}
+
+document.getElementById('confirmDeleteBackup').addEventListener('click', function() {
+    if (currentBackupFile) {
+        // Show deletion instructions instead of actually deleting
+        document.getElementById('deleteBackupContent').innerHTML = `
+            <div class="alert alert-info">
+                <h6><i class="fas fa-terminal"></i> Manual Deletion Required</h6>
+                <p>For security reasons, backup deletion must be performed manually via terminal:</p>
+            </div>
+            <div class="bg-dark text-light p-3 rounded">
+                <pre class="text-light mb-0"><code># Navigate to backup directory
+cd /home/paulo/projects/system-restore-toolkit/backups/
+
+# Delete the backup file
+rm ${currentBackupFile}
+
+# Refresh the web interface to see changes</code></pre>
+            </div>
+            <div class="alert alert-warning mt-3">
+                <i class="fas fa-shield-alt"></i>
+                <strong>Security Note:</strong> This prevents accidental deletion of critical backups.
+            </div>
+        `;
+        
+        // Update button to close modal
+        this.innerHTML = '<i class="fas fa-check"></i> Close';
+        this.className = 'btn btn-secondary';
+        this.onclick = function() {
+            bootstrap.Modal.getInstance(document.getElementById('deleteBackupModal')).hide();
+        };
+    }
+});
+</script>
 {% endblock %}

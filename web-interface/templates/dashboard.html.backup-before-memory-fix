@@ -71,14 +71,10 @@
                                     <h6 class="card-title">Memory</h6>
                                     <div class="stats-info">
                                         <div><strong>RAM:</strong> {{ system_stats.stats.memory }}</div>
-                                        <!-- Memory usage bar with accurate percentage -->
-                                        {% if system_stats.stats.memory != 'Unknown' and system_stats.stats.memory_percent %}
+                                        <!-- Memory usage bar if we can parse the values -->
+                                        {% if system_stats.stats.memory != 'Unknown' %}
                                         <div class="progress mt-2" style="height: 6px;">
-                                            {% set mem_percent = system_stats.stats.memory_percent %}
-                                            <div class="progress-bar {% if mem_percent > 85 %}bg-danger{% elif mem_percent > 70 %}bg-warning{% else %}bg-info{% endif %}" 
-                                                 role="progressbar" style="width: {{ mem_percent }}%" 
-                                                 aria-valuenow="{{ mem_percent }}" aria-valuemin="0" aria-valuemax="100"
-                                                 title="{{ mem_percent }}% memory used"></div>
+                                            <div class="progress-bar bg-info" role="progressbar" style="width: 60%" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
                                         </div>
                                         {% endif %}
                                     </div>
@@ -176,8 +172,8 @@
                         </div>
                         {% endif %}
 
-                        <!-- Disk Usage (Shrunk with reorganized layout) -->
-                        <div class="col-lg-4 col-md-6 mb-3">
+                        <!-- Disk Usage -->
+                        <div class="col-lg-8 col-md-6 mb-3">
                             <div class="card h-100 border-0 bg-light">
                                 <div class="card-body">
                                     <div class="text-center">
@@ -187,24 +183,34 @@
                                         <h6 class="card-title">Disk Usage</h6>
                                     </div>
                                     <div class="row text-center">
-                                        <!-- Left Side: USED and USAGE -->
-                                        <div class="col-6">
-                                            <div class="stats-metric">
-                                                <div class="stats-value text-danger">{{ system_stats.stats.disk_used }}</div>
-                                                <div class="stats-label">Used</div>
-                                            </div>
-                                        </div>
-                                        <!-- Right Side: TOTAL -->
-                                        <div class="col-6">
+                                        <div class="col-3">
                                             <div class="stats-metric">
                                                 <div class="stats-value text-primary">{{ system_stats.stats.disk_total }}</div>
                                                 <div class="stats-label">Total</div>
                                             </div>
                                         </div>
+                                        <div class="col-3">
+                                            <div class="stats-metric">
+                                                <div class="stats-value text-danger">{{ system_stats.stats.disk_used }}</div>
+                                                <div class="stats-label">Used</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-3">
+                                            <div class="stats-metric">
+                                                <div class="stats-value text-success">{{ system_stats.stats.disk_available }}</div>
+                                                <div class="stats-label">Available</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-3">
+                                            <div class="stats-metric">
+                                                <div class="stats-value text-warning">{{ system_stats.stats.disk_percent }}</div>
+                                                <div class="stats-label">Usage</div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <!-- Disk usage progress bar -->
                                     {% if system_stats.stats.disk_percent != 'Unknown' %}
-                                    <div class="progress mt-3" style="height: 8px;">
+                                    <div class="progress mt-3" style="height: 10px;">
                                         {% set usage_percent = system_stats.stats.disk_percent.rstrip('%') | int %}
                                         <div class="progress-bar {% if usage_percent > 90 %}bg-danger{% elif usage_percent > 70 %}bg-warning{% else %}bg-success{% endif %}" 
                                              role="progressbar" style="width: {{ usage_percent }}%" 
@@ -213,80 +219,6 @@
                                         </div>
                                     </div>
                                     {% endif %}
-                                    <div class="row text-center mt-2">
-                                        <!-- Left Side: USAGE percentage -->
-                                        <div class="col-6">
-                                            <div class="stats-metric">
-                                                <div class="stats-value text-warning" style="font-size: 0.9em;">{{ system_stats.stats.disk_percent }}</div>
-                                                <div class="stats-label">Usage</div>
-                                            </div>
-                                        </div>
-                                        <!-- Right Side: AVAILABLE -->
-                                        <div class="col-6">
-                                            <div class="stats-metric">
-                                                <div class="stats-value text-success" style="font-size: 0.9em;">{{ system_stats.stats.disk_available }}</div>
-                                                <div class="stats-label">Available</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Backup & Snapshot Summary (Fixed backup counting) -->
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <div class="card h-100 border-0 bg-light">
-                                <div class="card-body text-center">
-                                    <div class="text-purple mb-2" style="color: #6f42c1;">
-                                        <i class="fas fa-shield-alt fa-2x"></i>
-                                    </div>
-                                    <h6 class="card-title">Backup Status</h6>
-                                    <div class="stats-info">
-                                        <!-- System Backups Count (Fixed Logic) -->
-                                        <div class="row text-center">
-                                            <div class="col-6">
-                                                <div class="stats-metric">
-                                                    <!-- Backup count calculated in Python -->
-                                                    <!-- Remove complex Jinja2 logic -->
-                                                        
-                                                        
-                                                            <!-- Use Python calculated count -->
-                                                                
-                                                            <!-- End comment -->
-                                                    <div class="stats-value text-warning">{{ backup_count }}</div>
-                                                    <div class="stats-label">Backups</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="stats-metric">
-                                                    <div class="stats-value text-info" id="snapshots-count">0</div>
-                                                    <div class="stats-label">Snapshots</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Status Indicators -->
-                                        <div class="mt-2">
-                                            {% if backup_count > 0 %}
-                                                <div class="badge bg-success mb-1">✓ Backups OK</div>
-                                            {% else %}
-                                                <div class="badge bg-warning mb-1">⚠ No Backups</div>
-                                            {% endif %}
-                                            <div class="badge bg-info mb-1" id="timeshift-status">✓ Snapshots OK</div>
-                                        </div>
-                                        
-                                        <!-- Quick Access -->
-                                        <div class="mt-2">
-                                            <div class="btn-group btn-group-sm w-100">
-                                                <a href="{{ url_for('backups') }}" class="btn btn-outline-warning btn-sm">
-                                                    <i class="fas fa-archive"></i>
-                                                </a>
-                                                <a href="{{ url_for('timeshift') }}" class="btn btn-outline-info btn-sm">
-                                                    <i class="fas fa-clock"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -396,36 +328,6 @@
         </div>
     </div>
 </div>
-
-<script>
-// Load Timeshift snapshots count on page load
-document.addEventListener('DOMContentLoaded', function() {
-    fetch('/api/timeshift-snapshots')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.snapshots) {
-                const count = data.snapshots.length;
-                document.getElementById('snapshots-count').textContent = count;
-                
-                // Update status badge
-                const statusBadge = document.getElementById('timeshift-status');
-                if (count > 0) {
-                    statusBadge.textContent = '✓ Snapshots OK';
-                    statusBadge.className = 'badge bg-info mb-1';
-                } else {
-                    statusBadge.textContent = '⚠ No Snapshots';
-                    statusBadge.className = 'badge bg-warning mb-1';
-                }
-            }
-        })
-        .catch(error => {
-            console.log('Could not load snapshots count:', error);
-            const statusBadge = document.getElementById('timeshift-status');
-            statusBadge.textContent = '? Unknown';
-            statusBadge.className = 'badge bg-secondary mb-1';
-        });
-});
-</script>
 
 <style>
 .stats-info {
@@ -565,76 +467,6 @@ document.addEventListener('DOMContentLoaded', function() {
     .gpu-metrics .col-3 {
         margin-bottom: 10px;
     }
-}
-
-/* Dark Mode Statistics Enhancements */
-[data-theme="dark"] .stats-info {
-    color: var(--text-color);
-}
-
-[data-theme="dark"] .stats-value {
-    color: inherit;
-}
-
-[data-theme="dark"] .stats-label {
-    color: var(--muted-text);
-}
-
-[data-theme="dark"] .metric-label {
-    color: var(--muted-text);
-}
-
-[data-theme="dark"] .metric-value {
-    color: inherit;
-}
-
-[data-theme="dark"] .progress {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .progress-compact {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .border-bottom {
-}
-
-/* Ensure progress bars maintain their colors in dark mode */
-[data-theme="dark"] .progress-bar.bg-success,
-[data-theme="dark"] .progress-bar-compact.bg-success {
-}
-
-[data-theme="dark"] .progress-bar.bg-warning,
-[data-theme="dark"] .progress-bar-compact.bg-warning {
-}
-
-[data-theme="dark"] .progress-bar.bg-danger,
-[data-theme="dark"] .progress-bar-compact.bg-danger {
-}
-
-[data-theme="dark"] .progress-bar.bg-info {
-}
-
-[data-theme="dark"] .progress-bar.bg-primary {
-}
-
-/* Badge colors in dark mode */
-[data-theme="dark"] .badge.bg-primary {
-}
-
-[data-theme="dark"] .badge.bg-secondary {
-}
-
-[data-theme="dark"] .badge.bg-warning {
-}
-
-[data-theme="dark"] .badge.bg-success {
-}
-
-[data-theme="dark"] .badge.bg-info {
-}
-
-[data-theme="dark"] .badge.bg-danger {
 }
 </style>
 {% endblock %}

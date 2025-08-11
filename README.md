@@ -1,6 +1,6 @@
 # 🐳 System Restore Toolkit v2.0
 
-A modernized, containerized system backup and restore toolkit for Ubuntu Linux systems with LVM support.
+A modernized, containerized system backup and restore toolkit for Ubuntu Linux systems with LVM support and professional web interface.
 
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/)
@@ -13,13 +13,17 @@ A modernized, containerized system backup and restore toolkit for Ubuntu Linux s
 
 ## ✨ What's New in v2.0
 
-### 🌐 **Web Interface** (NEW!)
-- Modern web UI for managing backups and snapshots
-- Real-time system monitoring and task progress
-- User-friendly forms for backup creation
-- Responsive design for mobile and desktop
-- RESTful API for integration
+### 🌐 **Professional Web Interface** (Enhanced!)
+- **📊 Real-time System Monitoring**: CPU, memory, disk usage, GPU stats with live progress bars
+- **🎨 Dark/Light Mode Toggle**: Professional theme switching with persistent user preferences  
+- **💾 Complete Backup Management**: Full lifecycle management for system backups
+- **🕐 Advanced Timeshift Integration**: Interactive snapshot management with safety controls
+- **📋 Comprehensive Log Viewer**: Dynamic log loading with search and download capabilities
+- **📱 Responsive Design**: Mobile-friendly interface with Bootstrap 5
+- **🛡️ Safety-First Approach**: Manual command execution for critical operations
+- **🚀 RESTful API**: Complete API endpoints for automation and integration
 
+### 🔧 **System Enhancements**
 - 🐳 **Full Docker support** with containerized deployment
 - 🔧 **Refactored codebase** with improved error handling and logging
 - 📚 **Unified command interface** with the new `system-restore-toolkit` command
@@ -27,6 +31,16 @@ A modernized, containerized system backup and restore toolkit for Ubuntu Linux s
 - 📊 **Better monitoring** with detailed logging and system state reporting
 
 ## 🚀 Quick Start
+
+### Web Interface Access
+```bash
+# Start the web interface
+cd web-interface
+python app.py
+
+# Access at: http://localhost:5000
+# Features: Dashboard, Backups, Timeshift, Logs
+```
 
 ### Option 1: Docker (Recommended)
 ```bash
@@ -48,10 +62,22 @@ docker exec -it restore-toolkit system-restore-toolkit help
 
 # Use from anywhere
 system-restore-toolkit help
-rt create-snapshot "My backup"
+
+# Start web interface
+setup-web-interface.sh
 ```
 
 ## 🎯 Features
+
+### 🌐 Web Interface
+- **📊 System Dashboard**: Real-time monitoring with CPU, memory, disk, and GPU statistics
+- **💾 Backup Management**: Create, list, restore, and delete full system backups
+- **🕐 Timeshift Integration**: Complete snapshot lifecycle management
+- **📋 Log Viewer**: Dynamic log loading with real-time content viewing
+- **🎨 Theme Support**: Professional dark/light mode toggle with persistence
+- **📱 Responsive UI**: Bootstrap 5-based interface for all devices
+- **🔒 Security Focus**: Manual command execution for critical operations
+- **🚀 API Endpoints**: RESTful API for automation and third-party integration
 
 ### 📸 LVM Snapshots
 - **Fast creation** and restoration

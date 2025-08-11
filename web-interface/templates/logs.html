@@ -6,7 +6,24 @@
 <div class="row">
     <div class="col-12">
         <h1><i class="fas fa-file-alt"></i> System Logs</h1>
-        <p class="lead">View and monitor system restore toolkit logs</p>
+        <p class="lead">View and monitor all system restore toolkit logs from multiple sources</p>
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle"></i> Enhanced Logging</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <strong><i class="fas fa-cogs text-primary"></i> Toolkit Logs:</strong><br>
+                    <small>Main operations and command execution</small>
+                </div>
+                <div class="col-md-4">
+                    <strong><i class="fas fa-globe text-info"></i> Web Interface:</strong><br>
+                    <small>Web server operations and errors</small>
+                </div>
+                <div class="col-md-4">
+                    <strong><i class="fas fa-server text-warning"></i> System Logs:</strong><br>
+                    <small>Timeshift, backups, and system events</small>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -20,12 +37,38 @@
                 {% if log_files %}
                     <div class="list-group">
                         {% for log in log_files %}
-                        <a href="#" class="list-group-item list-group-item-action" onclick="loadLogFile('{{ log.name }}')">
+                        <a href="#" class="list-group-item list-group-item-action" onclick="loadLogFile('{{ log.name }}')"
+                           data-log-type="{{ log.type }}">
                             <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ log.name }}</h6>
-                                <small>{{ log.size | filesizeformat if log.size else '0 bytes' }}</small>
+                                <h6 class="mb-1">
+                                    {% if log.type == "Toolkit" %}
+                                        <i class="fas fa-cogs text-primary"></i>
+                                    {% elif log.type == "Web Interface" %}
+                                        <i class="fas fa-globe text-info"></i>
+                                    {% elif log.type == "System" %}
+                                        <i class="fas fa-server text-warning"></i>
+                                    {% endif %}
+                                    {{ log.name }}
+                                </h6>
+                                <small>
+                                    {% if log.size != "Variable" %}
+                                        {{ log.size | filesizeformat if log.size else "0 bytes" }}
+                                    {% else %}
+                                        <i class="fas fa-sync-alt"></i> Dynamic
+                                    {% endif %}
+                                </small>
                             </div>
-                            <small>Modified: {{ log.modified.strftime('%Y-%m-%d %H:%M') if log.modified else 'Unknown' }}</small>
+                            <div class="d-flex w-100 justify-content-between">
+                                <small class="text-muted">{{ log.description }}</small>
+                                <span class="badge badge-sm 
+                                    {% if log.type == "Toolkit" %}bg-primary
+                                    {% elif log.type == "Web Interface" %}bg-info
+                                    {% elif log.type == "System" %}bg-warning text-dark
+                                    {% endif %}">{{ log.type }}</span>
+                            </div>
+                            {% if log.size != "Variable" %}
+                            <small class="text-muted">Modified: {{ log.modified.strftime('%Y-%m-%d %H:%M') if log.modified else 'Unknown' }}</small>
+                            {% endif %}
                         </a>
                         {% endfor %}
                     </div>
@@ -37,7 +80,10 @@
                 
                 <div class="mt-3">
                     <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
-                        <i class="fas fa-sync-alt"></i> Refresh
+                        <i class="fas fa-sync-alt"></i> Manual Refresh
+                    <button class="btn btn-sm btn-outline-info" onclick="scrollToBottom()" id="scroll-bottom-btn" style="display: none;" title="Scroll to bottom">
+                        <i class="fas fa-arrow-down"></i> Bottom
+                    </button>
                     </button>
                 </div>
             </div>
@@ -50,7 +96,10 @@
                 <h5 id="log-title"><i class="fas fa-file-alt"></i> Log Content</h5>
                 <div>
                     <button class="btn btn-sm btn-outline-primary" onclick="refreshLogContent()" id="refresh-btn" style="display: none;">
-                        <i class="fas fa-sync-alt"></i> Refresh
+                        <i class="fas fa-sync-alt"></i> Manual Refresh
+                    <button class="btn btn-sm btn-outline-info" onclick="scrollToBottom()" id="scroll-bottom-btn" style="display: none;" title="Scroll to bottom">
+                        <i class="fas fa-arrow-down"></i> Bottom
+                    </button>
                     </button>
                     <button class="btn btn-sm btn-outline-secondary" onclick="downloadLog()" id="download-btn" style="display: none;">
                         <i class="fas fa-download"></i> Download
@@ -107,12 +156,13 @@ let currentLogFile = null;
 
 function loadLogFile(filename) {
     currentLogFile = filename;
-    document.getElementById('log-title').innerHTML = '<i class="fas fa-file-alt"></i> ' + filename;
-    document.getElementById('refresh-btn').style.display = 'inline-block';
-    document.getElementById('download-btn').style.display = 'inline-block';
+    document.getElementById("log-title").innerHTML = `<i class="fas fa-file-alt"></i> ${filename}`;
+    document.getElementById("refresh-btn").style.display = "inline-block";
+    document.getElementById("download-btn").style.display = "inline-block";
+    document.getElementById("scroll-bottom-btn").style.display = "inline-block";
     
     // Show loading
-    document.getElementById('log-content').innerHTML = `
+    document.getElementById("log-content").innerHTML = `
         <div class="text-center">
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -121,53 +171,76 @@ function loadLogFile(filename) {
         </div>
     `;
     
-    // Load log content (simulate for now)
-    setTimeout(() => {
-        document.getElementById('log-content').innerHTML = `
-            <pre class="bg-light p-3" style="height: 400px; overflow-y: auto;">
-Log file: ${filename}
-
-This is a placeholder for log content.
-In a real implementation, this would:
-1. Make an AJAX call to fetch log content
-2. Display the actual log entries
-3. Support real-time updates
-4. Allow filtering and searching
-
-Example log entries:
-[INFO] 2025-08-11 17:00:00 System Restore Toolkit v2.0 initialized
-[SUCCESS] 2025-08-11 17:01:23 Snapshot created: restore-point-20250811_170123
-[WARNING] 2025-08-11 17:02:45 Disk space below 20%
-[ERROR] 2025-08-11 17:03:12 Failed to create backup: insufficient space
-
-To implement this feature, add an API endpoint:
-@app.route('/api/logs/&lt;filename&gt;')
-def get_log_content(filename):
-    # Read and return log file content
-    pass
-            </pre>
-        `;
-    }, 1000);
+    // Fetch actual log content from API
+    fetch(`/api/logs/${filename}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const logTypeInfo = data.type ? `<small class="text-muted">Type: ${data.type} | </small>` : "";
+                const lineInfo = data.lines ? `Lines: ${data.lines}` : "Unknown size";
+                
+                document.getElementById("log-content").innerHTML = `
+                    <div class="mb-2">
+                        ${logTypeInfo}<small class="text-muted">${lineInfo}</small>
+                    </div>
+                    <div class="bg-dark text-light p-3" style="height: 500px; overflow-y: auto; font-family: monospace; font-size: 0.85em;">
+                        <pre class="text-light mb-0">${data.content}</pre>
+                    </div>`;
+            } else {
+                document.getElementById("log-content").innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>Error loading log:</strong> ${data.error}
+                    </div>`;
+            }
+        })
+        .catch(error => {
+            console.error("Error loading log:", error);
+            document.getElementById("log-content").innerHTML = `
+                <div class="alert alert-danger">
+                    <strong>Error loading log:</strong> ${error.message}
+                </div>`;
+        });
 }
 
 function refreshLogContent() {
     if (currentLogFile) {
+        // Save current scroll position
+        const logContent = document.getElementById("log-content");
+        const scrollContainer = logContent.querySelector(".bg-dark");
+        const savedScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+        
+        // Reload the log content
         loadLogFile(currentLogFile);
+        
+        // Restore scroll position after content loads
+        setTimeout(() => {
+            const newScrollContainer = document.getElementById("log-content").querySelector(".bg-dark");
+            if (newScrollContainer) {
+                newScrollContainer.scrollTop = savedScrollTop;
+            }
+        }, 500);
+    }
+}
+
+function scrollToBottom() {
+    const scrollContainer = document.getElementById("log-content").querySelector(".bg-dark");
+    if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
     }
 }
 
 function downloadLog() {
     if (currentLogFile) {
-        // In a real implementation, this would trigger a download
-        window.open('/api/logs/' + currentLogFile + '/download', '_blank');
+        // Only allow downloads for actual files, not virtual system logs
+        if (currentLogFile.startsWith("system/")) {
+            alert("System logs are virtual aggregations and cannot be downloaded. Use the copy button or view the content directly.");
+            return;
+        }
+        window.open(`/api/logs/${currentLogFile}/download`, "_blank");
     }
 }
 
-// Auto-refresh active log every 30 seconds
-setInterval(() => {
-    if (currentLogFile) {
-        refreshLogContent();
-    }
-}, 30000);
+// Manual refresh only - no auto-refresh to avoid scroll interruption
+// Users can click the refresh button when needed
 </script>
 {% endblock %}
