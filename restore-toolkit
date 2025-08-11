@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# System Restore Toolkit Launcher
+# This script provides easy access to the restore toolkit from anywhere
+
+TOOLKIT_DIR="$HOME/projects/system-restore-toolkit"
+
+# Check if we're in the toolkit directory
+if [ "$(pwd)" = "$TOOLKIT_DIR" ]; then
+    SCRIPT_PATH="./manage_restore_points.sh"
+else
+    SCRIPT_PATH="$TOOLKIT_DIR/manage_restore_points.sh"
+fi
+
+# Check if the toolkit exists
+if [ ! -f "$TOOLKIT_DIR/manage_restore_points.sh" ]; then
+    echo "❌ System Restore Toolkit not found at $TOOLKIT_DIR"
+    echo "   Please check the installation"
+    exit 1
+fi
+
+# If no arguments, show location and help
+if [ $# -eq 0 ]; then
+    echo "🛡️ System Restore Toolkit"
+    echo "Location: $TOOLKIT_DIR"
+    echo ""
+    exec "$SCRIPT_PATH" help
+else
+    # Pass all arguments to the main script
+    exec "$SCRIPT_PATH" "$@"
+fi

@@ -1,0 +1,31 @@
+# Backup files and logs
+backups/*.tar.gz
+backups/*.log
+backups/*_state.txt
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+*~
+
+# System files
+timeshift/
+
+# Docker
+.dockerignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Runtime files
+*.pid
+*.sock
+
+# Local environment files
+.env
+.env.local
