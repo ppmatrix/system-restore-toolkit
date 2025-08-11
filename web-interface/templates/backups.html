@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Full System Backups - System Restore Toolkit{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-archive"></i> Full System Backups</h1>
+            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#createBackupModal">
+                <i class="fas fa-plus"></i> Create Backup
+            </button>
+        </div>
+        <p class="lead">Manage complete system backups for disaster recovery</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> Available Backups</h5>
+            </div>
+            <div class="card-body">
+                {% if backups_info.success %}
+                    <pre class="bg-light p-3">{{ backups_info.output }}</pre>
+                {% else %}
+                    <div class="alert alert-danger">
+                        <strong>Error loading backups:</strong> {{ backups_info.error }}
+                    </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <button class="btn btn-outline-secondary" onclick="location.reload()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5><i class="fas fa-info-circle"></i> Backup Information</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check-circle text-success"></i> <strong>Complete Protection:</strong> Full system backup including all user data and configurations</li>
+                    <li><i class="fas fa-check-circle text-success"></i> <strong>Disaster Recovery:</strong> Restore entire system from complete backup</li>
+                    <li><i class="fas fa-check-circle text-success"></i> <strong>Compressed Storage:</strong> Backups are compressed to save storage space</li>
+                    <li><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Time Intensive:</strong> Full backups take longer to create and restore</li>
+                    <li><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Storage Space:</strong> Requires significant disk space for backup storage</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Backup Modal -->
+<div class="modal fade" id="createBackupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('create_backup') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Full System Backup</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="backupDescription" class="form-label">Backup Description</label>
+                        <input type="text" class="form-control" id="backupDescription" name="description" 
+                               placeholder="e.g., Weekly backup before maintenance" required>
+                        <div class="form-text">Provide a meaningful description to identify this backup later.</div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Important Notes:</h6>
+                        <ul class="mb-0">
+                            <li>Full backups can take 30 minutes to several hours depending on system size</li>
+                            <li>Ensure sufficient disk space (at least 50% of system size)</li>
+                            <li>System performance may be impacted during backup creation</li>
+                            <li>Backup will be stored in compressed format (.tar.gz)</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-archive"></i> Create Backup
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
