@@ -183,8 +183,8 @@
 
         /* Navbar Logo Styling */
         .navbar-logo {
-            height: 12px;
-            width: 12px;
+            height: 48px;
+            width: 48px;
             object-fit: contain;
             filter: brightness(1.1);
             transition: filter 0.3s ease;
@@ -221,7 +221,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
-                <img src="{{ url_for('static', filename='images/STRlogo.png') }}" alt="STR Logo" class="navbar-logo me-2">
+                <img src="{{ url_for('static', filename='images/STRlogo.png') }}" alt="STR Logo" class="navbar-logo me-2" style="height: 48px !important; width: 48px !important;">
                 System Restore Toolkit
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
