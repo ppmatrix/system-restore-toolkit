@@ -250,16 +250,6 @@ system-restore-toolkit/
   - .git/                        # Git repository
   - .gitignore                   # Git ignore rules
   - .dockerignore                # Docker ignore rules
-```
-```
-```
-    ├── .git/                  # Git repository
-    ├── .gitignore             # Git ignore rules
-    └── .dockerignore          # Docker ignore rules
-```
-    ├── .gitignore
-    └── .dockerignore
-```
 
 ## 🔧 Configuration
 
