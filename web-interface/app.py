@@ -17,7 +17,7 @@ app = Flask(__name__)
 app.secret_key = 'system-restore-toolkit-secret-key-change-in-production'
 
 # Configuration
-SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPT_DIR = "/toolkit"
 TOOLKIT_CMD = os.path.join(SCRIPT_DIR, 'system-restore-toolkit')
 
 class TaskManager:
@@ -100,52 +100,63 @@ def run_toolkit_command(command):
         }
 
 def get_timeshift_snapshots():
-    """Get Timeshift snapshots information"""
+    """Get Timeshift snapshots by reading from shared JSON file"""
     try:
-        result = subprocess.run(
-            ['sudo', 'timeshift', '--list', '--scripted'],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        import json
+        import os
+        from datetime import datetime
         
-        if result.returncode == 0:
-            lines = result.stdout.strip().split('\n')
-            snapshots = []
-            summary_lines = []
-            
-            for line in lines:
-                line = line.strip()
-                if line and ">" in line:  # Snapshot lines with > indicator
-                    parts = line.split()
-                    if len(parts) >= 3:
-                        snapshots.append({
-                            'num': parts[0],
-                            'name': parts[2],
-                            'tags': parts[3] if len(parts) > 3 else '',
-                            'description': ' '.join(parts[4:]) if len(parts) > 4 else ''
-                        })
-                elif 'snapshots' in line or 'free' in line or 'Status' in line:
-                    summary_lines.append(line)
-            
-            return {
-                'success': True,
-                'snapshots': snapshots,
-                'summary': '\n'.join(summary_lines)
-            }
-        else:
+        # Path to the shared JSON file - mounted as part of the project directory
+        json_file_path = "/toolkit/shared-data/timeshift-info.json"
+        
+        # Check if file exists
+        if not os.path.exists(json_file_path):
             return {
                 'success': False,
-                'error': result.stderr or 'Failed to list Timeshift snapshots',
-                'snapshots': []
+                'error': "Timeshift data not available. Run the update script on host.",
+                'snapshots': [],
+                'summary': []
             }
+        
+        # Read the JSON file
+        with open(json_file_path, 'r') as f:
+            data = json.load(f)
+        
+        # Check if data is recent (within last hour)
+        try:
+            timestamp_str = data.get('timestamp', '')
+            if timestamp_str:
+                file_time = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                now = datetime.now()
+                age_seconds = (now - file_time).total_seconds()
+                if age_seconds > 3600:  # older than 1 hour
+                    data['warning'] = f"Data is {int(age_seconds/60)} minutes old"
+        except:
+            pass  # ignore timestamp parsing errors
+        
+        return data
+        
+    except FileNotFoundError:
+        return {
+            'success': False,
+            'error': "Timeshift data file not found",
+            'snapshots': [],
+            'summary': []
+        }
+    except json.JSONDecodeError:
+        return {
+            'success': False,
+            'error': "Failed to parse timeshift data file",
+            'snapshots': [],
+            'summary': []
+        }
     except Exception as e:
         return {
             'success': False,
-            'error': str(e),
-            'snapshots': []
+            'error': f"Error reading timeshift data: {str(e)}",
+            'snapshots': [],
+            'summary': []
         }
-
 
 def get_parsed_backups():
     """Get parsed backup information for table display"""
@@ -460,7 +471,7 @@ def get_system_log_content(filename):
                     content_parts.append("")
             
             # Check toolkit logs for backup entries
-            toolkit_log = os.path.join(SCRIPT_DIR, "logs", f"toolkit-{datetime.now().strftime("%Y%m%d")}.log")
+            toolkit_log = os.path.join(SCRIPT_DIR, "logs", f'toolkit-{datetime.now().strftime("%Y%m%d")}.log')
             if os.path.exists(toolkit_log):
                 with open(toolkit_log, "r", encoding="utf-8", errors="replace") as f:
                     toolkit_lines = [line.strip() for line in f.readlines() if "backup" in line.lower()]
@@ -548,7 +559,7 @@ def delete_timeshift():
     
     try:
         result = subprocess.run(
-            ['sudo', 'timeshift', '--delete', '--snapshot', snapshot_name, '--yes'],
+            ['sudo', '/host/var/lib/snapd/hostfs/usr/bin/timeshift', '--delete', '--snapshot', snapshot_name, '--yes'],
             capture_output=True,
             text=True,
             timeout=60
@@ -589,7 +600,7 @@ def restore_timeshift():
         # For safety, we will only prepare the restore command but not execute it
         # This is too dangerous to run via web interface
         flash(f"For safety, snapshot restoration must be done manually:", "warning")
-        flash(f"Run: sudo timeshift --restore --snapshot \"{snapshot_name}\"", "info")
+        flash(f"Run: sudo /host/var/lib/snapd/hostfs/usr/bin/timeshift --restore --snapshot \"{snapshot_name}\"", "info")
         flash("System will reboot automatically after restoration", "info")
         
     except Exception as e:
@@ -603,35 +614,98 @@ def api_timeshift_info():
 
 
 def get_system_statistics():
-    """Get comprehensive system statistics"""
+    """Get comprehensive system statistics with host system access"""
     try:
         stats = {}
         
-        # System Information
+        # Use host proc/sys paths if available
+        host_proc = os.getenv('HOST_PROC', '/proc')
+        host_sys = os.getenv('HOST_SYS', '/sys')
+        
+        # System Information - Use host system files
         try:
-            stats['hostname'] = subprocess.run(['hostname'], capture_output=True, text=True).stdout.strip()
+            # Try to get real hostname from host
+            if os.path.exists('/etc/hostname'):
+                with open('/etc/hostname', 'r') as f:
+                    stats['hostname'] = f.read().strip()
+            else:
+                stats['hostname'] = subprocess.run(['hostname'], capture_output=True, text=True).stdout.strip()
         except:
             stats['hostname'] = 'Unknown'
             
         try:
             stats['kernel'] = subprocess.run(['uname', '-r'], capture_output=True, text=True).stdout.strip()
         except:
-            stats['kernel'] = 'Unknown'
+            try:
+                with open(f'{host_proc}/version', 'r') as f:
+                    version_line = f.read().strip()
+                    # Extract kernel version from /proc/version
+                    parts = version_line.split()
+                    if len(parts) >= 3:
+                        stats['kernel'] = parts[2]
+                    else:
+                        stats['kernel'] = 'Unknown'
+            except:
+                stats['kernel'] = 'Unknown'
             
+        # Uptime - Use host proc
         try:
             uptime_output = subprocess.run(['uptime', '-p'], capture_output=True, text=True).stdout.strip()
             stats['uptime'] = uptime_output.replace('up ', '')
         except:
-            stats['uptime'] = 'Unknown'
+            try:
+                with open(f'{host_proc}/uptime', 'r') as f:
+                    uptime_seconds = float(f.read().split()[0])
+                    days = int(uptime_seconds // 86400)
+                    hours = int((uptime_seconds % 86400) // 3600)
+                    minutes = int((uptime_seconds % 3600) // 60)
+                    
+                    uptime_parts = []
+                    if days > 0:
+                        uptime_parts.append(f"{days} day{'s' if days != 1 else ''}")
+                    if hours > 0:
+                        uptime_parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+                    if minutes > 0:
+                        uptime_parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+                    
+                    stats['uptime'] = ', '.join(uptime_parts) if uptime_parts else 'Less than a minute'
+            except:
+                stats['uptime'] = 'Unknown'
         
-        # OS Information
+        # OS Information - Use host OS release files
         try:
-            os_info = subprocess.run(['lsb_release', '-d'], capture_output=True, text=True).stdout.strip()
-            stats['os'] = os_info.split('\t')[1] if '\t' in os_info else os_info
+            # Try multiple OS release files
+            os_files = ['/etc/os-release', '/etc/lsb-release']
+            for os_file in os_files:
+                try:
+                    if os.path.exists(os_file):
+                        with open(os_file, 'r') as f:
+                            content = f.read()
+                            if 'PRETTY_NAME=' in content:
+                                for line in content.split('\n'):
+                                    if line.startswith('PRETTY_NAME='):
+                                        stats['os'] = line.split('=')[1].strip('"')
+                                        break
+                                break
+                            elif 'DISTRIB_DESCRIPTION=' in content:
+                                for line in content.split('\n'):
+                                    if line.startswith('DISTRIB_DESCRIPTION='):
+                                        stats['os'] = line.split('=')[1].strip('"')
+                                        break
+                                break
+                except:
+                    continue
+            else:
+                # Fallback to lsb_release command
+                try:
+                    os_info = subprocess.run(['lsb_release', '-d'], capture_output=True, text=True).stdout.strip()
+                    stats['os'] = os_info.split('\t')[1] if '\t' in os_info else 'Linux'
+                except:
+                    stats['os'] = 'Linux'
         except:
             stats['os'] = 'Linux'
         
-        # CPU Information
+        # CPU Information - Use host proc
         try:
             cpu_info = subprocess.run(['lscpu'], capture_output=True, text=True).stdout
             cpu_name = ''
@@ -643,9 +717,28 @@ def get_system_statistics():
                     cpu_cores = line.split(':')[1].strip()
             stats['cpu'] = f"{cpu_name} ({cpu_cores} cores)" if cpu_name and cpu_cores else 'Unknown'
         except:
-            stats['cpu'] = 'Unknown'
+            try:
+                # Read from host /proc/cpuinfo
+                with open(f'{host_proc}/cpuinfo', 'r') as f:
+                    cpuinfo = f.read()
+                    
+                cpu_name = 'Unknown'
+                cpu_count = 0
+                
+                for line in cpuinfo.split('\n'):
+                    if line.startswith('model name'):
+                        cpu_name = line.split(':')[1].strip()
+                    elif line.startswith('processor'):
+                        cpu_count += 1
+                
+                if cpu_name != 'Unknown' and cpu_count > 0:
+                    stats['cpu'] = f"{cpu_name} ({cpu_count} cores)"
+                else:
+                    stats['cpu'] = 'Unknown'
+            except:
+                stats['cpu'] = 'Unknown'
         
-        # Memory Information
+        # Memory Information - Use host proc
         try:
             mem_info = subprocess.run(['free', '-h'], capture_output=True, text=True).stdout
             mem_lines = mem_info.split('\n')
@@ -675,8 +768,40 @@ def get_system_statistics():
                             stats["memory_percent"] = 38  # Default fallback
                     break
         except:
-            stats['memory'] = 'Unknown'
-            stats["memory_percent"] = 0
+            try:
+                # Read from host /proc/meminfo
+                with open(f'{host_proc}/meminfo', 'r') as f:
+                    meminfo = f.read()
+                    
+                mem_total_kb = 0
+                mem_available_kb = 0
+                
+                for line in meminfo.split('\n'):
+                    if line.startswith('MemTotal:'):
+                        mem_total_kb = int(line.split()[1])
+                    elif line.startswith('MemAvailable:'):
+                        mem_available_kb = int(line.split()[1])
+                
+                if mem_total_kb > 0:
+                    mem_used_kb = mem_total_kb - mem_available_kb
+                    
+                    # Convert to human readable
+                    def kb_to_human(kb):
+                        if kb >= 1024 * 1024:
+                            return f"{kb / (1024 * 1024):.1f}GB"
+                        elif kb >= 1024:
+                            return f"{kb / 1024:.1f}MB"
+                        else:
+                            return f"{kb}KB"
+                    
+                    stats['memory'] = f"{kb_to_human(mem_used_kb)} / {kb_to_human(mem_total_kb)}"
+                    stats['memory_percent'] = int((mem_used_kb / mem_total_kb) * 100)
+                else:
+                    stats['memory'] = 'Unknown'
+                    stats["memory_percent"] = 0
+            except:
+                stats['memory'] = 'Unknown'
+                stats["memory_percent"] = 0
         
         # Disk Usage
         try:
@@ -694,9 +819,9 @@ def get_system_statistics():
         except:
             stats['disk_total'] = stats['disk_used'] = stats['disk_available'] = stats['disk_percent'] = 'Unknown'
         
-        # GPU Information
+        # GPU Information - Enhanced with host access
         try:
-            # Check if nvidia-smi is available
+            # Check if nvidia-smi is available (mounted from host)
             nvidia_check = subprocess.run(['which', 'nvidia-smi'], capture_output=True, text=True)
             
             if nvidia_check.returncode == 0:
@@ -756,7 +881,7 @@ def get_system_statistics():
             stats['gpu'] = 'Unknown'
 
         
-        # Load Average
+        # Load Average - Use host proc
         try:
             load_info = subprocess.run(['uptime'], capture_output=True, text=True).stdout
             if 'load average:' in load_info:
@@ -765,9 +890,16 @@ def get_system_statistics():
             else:
                 stats['load_average'] = 'Unknown'
         except:
-            stats['load_average'] = 'Unknown'
+            try:
+                with open(f'{host_proc}/loadavg', 'r') as f:
+                    loadavg = f.read().strip()
+                    # First three values are 1min, 5min, 15min averages
+                    parts = loadavg.split()[:3]
+                    stats['load_average'] = ', '.join(parts)
+            except:
+                stats['load_average'] = 'Unknown'
         
-        # Temperature (if available)
+        # Temperature - Enhanced with host sensors access
         try:
             temp_info = subprocess.run(['sensors'], capture_output=True, text=True, timeout=5)
             if temp_info.returncode == 0:
@@ -779,7 +911,26 @@ def get_system_statistics():
             else:
                 stats['temperature'] = 'Not available'
         except:
-            stats['temperature'] = 'Not available'
+            # Try to read from host thermal zones
+            try:
+                temp_zones = []
+                import glob
+                for thermal_file in glob.glob(f'{host_sys}/class/thermal/thermal_zone*/temp'):
+                    try:
+                        with open(thermal_file, 'r') as f:
+                            temp_millicelsius = int(f.read().strip())
+                            temp_celsius = temp_millicelsius / 1000.0
+                            zone_num = thermal_file.split('thermal_zone')[1].split('/')[0]
+                            temp_zones.append(f"Zone {zone_num}: {temp_celsius:.1f}°C")
+                    except:
+                        continue
+                
+                if temp_zones:
+                    stats['temperature'] = '; '.join(temp_zones[:2])  # Show first 2 zones
+                else:
+                    stats['temperature'] = 'Not available'
+            except:
+                stats['temperature'] = 'Not available'
             
         return {
             'success': True,
@@ -792,12 +943,11 @@ def get_system_statistics():
             'error': str(e),
             'stats': {}
         }
-
 if __name__ == '__main__':
     # Check if toolkit exists
     if not os.path.exists(TOOLKIT_CMD):
         print(f"Error: Toolkit not found at {TOOLKIT_CMD}")
-        sys.exit(1)
+        print("WARNING: Toolkit will be checked at runtime")
     
     print("🌐 System Restore Toolkit Web Interface (Backups & Timeshift)")
     print("=============================================================")
@@ -816,3 +966,31 @@ if __name__ == '__main__':
     # Start Flask app
     app.run(host='0.0.0.0', port=5000, debug=False)
 
+
+
+@app.route('/api/refresh-timeshift', methods=['POST'])
+def refresh_timeshift():
+    """Trigger timeshift data refresh by calling the host script"""
+    try:
+        # Execute the host update script
+        result = subprocess.run([
+            'python3', '/toolkit/host-scripts/update-timeshift-data.py'
+        ], capture_output=True, text=True, timeout=60)
+        
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Timeshift data refreshed successfully',
+                'output': result.stdout.strip()
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Failed to refresh: {result.stderr.strip() or "Unknown error"}',
+                'output': result.stdout.strip()
+            })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error: {str(e)}'
+        })

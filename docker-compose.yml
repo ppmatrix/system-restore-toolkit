@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   system-restore-toolkit:
     build:
@@ -7,18 +5,26 @@ services:
       dockerfile: Dockerfile
     image: system-restore-toolkit:latest
     container_name: restore-toolkit
-    privileged: true  # Required for LVM operations
+    privileged: true  # Required for LVM operations and host access
     restart: unless-stopped
+    pid: host  # Access to host process namespace for nsenter
     
     volumes:
       # Mount host filesystem for backup operations
-      - /:/host:ro
+      - /:/host:rw
       # Persistent storage for backups
       - ./backups:/var/backups/system-restore-toolkit
       # Persistent storage for logs
       - ./logs:/var/log/system-restore-toolkit
       # Docker socket (if needed for container operations)
       - /var/run/docker.sock:/var/run/docker.sock
+      # Host system information access
+      - /etc/hostname:/host/etc/hostname:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /etc/lsb-release:/host/etc/lsb-release:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /dev:/host/dev:ro
     
     environment:
       - TZ=UTC
@@ -27,6 +33,8 @@ services:
     
     # Keep container running
     tty: true
+    entrypoint: [""]
+    command: ["tail", "-f", "/dev/null"]
     stdin_open: true
     
     networks:
@@ -39,6 +47,8 @@ services:
     image: system-restore-toolkit-web:latest
     container_name: restore-toolkit-web
     restart: unless-stopped
+    privileged: true  # For hardware access
+    pid: host  # Access to host process namespace for nsenter
     
     ports:
       - "5000:5000"
@@ -48,11 +58,28 @@ services:
       - .:/toolkit:ro
       - ./logs:/toolkit/logs:ro
       - ./backups:/toolkit/backups:ro
+      # Host system information access
+      - /etc/hostname:/host/etc/hostname:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /etc/lsb-release:/host/etc/lsb-release:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /dev:/host/dev:ro
+      # Mount entire host filesystem for chroot access
+      - /:/host:rw
     
     environment:
       - TZ=UTC
       - FLASK_ENV=production
       - FLASK_DEBUG=false
+      - HOST_PROC=/host/proc
+      - HOST_SYS=/host/sys
+      - HOST_DEV=/host/dev
+      - HOST_ETC=/host/etc
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=utility,compute
+    
+    runtime: nvidia
     
     depends_on:
       - system-restore-toolkit

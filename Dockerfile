@@ -11,8 +11,10 @@ ENV TZ=UTC
 # Install required packages
 RUN apt-get update && apt-get install -y \
     bash coreutils util-linux lvm2 tar gzip rsync \
+    software-properties-common \
     lsof htop iotop curl wget grep sed gawk findutils \
     lsb-release sudo && \
+
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create toolkit user
@@ -37,7 +39,8 @@ RUN chmod +x system-restore-toolkit manage_restore_points.sh \
 
 # Create symlinks for global access
 RUN ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/system-restore-toolkit && \
-    ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/rt
+    ln -sf /opt/system-restore-toolkit/system-restore-toolkit /usr/local/bin/rt && \
+    ln -sf /opt/system-restore-toolkit/lib /usr/local/bin/lib
 
 # Create configuration
 RUN echo 'BACKUP_DIR="/var/backups/system-restore-toolkit"' > /etc/system-restore-toolkit.conf && \

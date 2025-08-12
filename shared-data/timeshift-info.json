@@ -1,0 +1,50 @@
+{
+  "success": true,
+  "snapshots": [
+    {
+      "num": "0",
+      "name": "2025-08-08_17-00-01",
+      "tags": "D",
+      "description": ""
+    },
+    {
+      "num": "1",
+      "name": "2025-08-09_17-00-01",
+      "tags": "D",
+      "description": ""
+    },
+    {
+      "num": "2",
+      "name": "2025-08-10_17-00-01",
+      "tags": "D",
+      "description": ""
+    },
+    {
+      "num": "3",
+      "name": "2025-08-11_17-00-01",
+      "tags": "D",
+      "description": ""
+    },
+    {
+      "num": "4",
+      "name": "2025-08-11_19-32-13",
+      "tags": "O",
+      "description": "After system fixed 01"
+    },
+    {
+      "num": "5",
+      "name": "2025-08-11_19-32-52",
+      "tags": "O",
+      "description": "After system fixed 02"
+    }
+  ],
+  "summary": [
+    "Device : /dev/dm-0 (nvme0n1p3)",
+    "UUID   : 5eefb156-e5a0-4050-a1ae-b3083c78f134",
+    "Path   : /run/timeshift/424305/backup",
+    "Mode   : RSYNC",
+    "Status : OK",
+    "6 snapshots, 1.2 TB free"
+  ],
+  "timestamp": "2025-08-12 12:30:47"
+}

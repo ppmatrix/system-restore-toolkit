@@ -1,9 +1,17 @@
 FROM python:3.11-slim
 
-# Install system dependencies
+# Install system dependencies including hardware monitoring tools
 RUN apt-get update && apt-get install -y \
     bash \
     sudo \
+    procps \
+    coreutils \
+    curl \
+    util-linux \
+    pciutils \
+    lm-sensors \
+    lsb-release \
+    udev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
@@ -16,8 +24,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy web application
 COPY . .
 
-# Create non-root user
+# Create non-root user with sudo access
 RUN useradd -m -s /bin/bash webapp && \
+    usermod -aG sudo webapp && \
+    echo 'webapp ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
     chown -R webapp:webapp /app
 
 USER webapp
