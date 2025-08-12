@@ -206,50 +206,51 @@ docker run --rm -it --privileged \
 
 ```
 system-restore-toolkit/
-├─ Docker Files
-│  ├─ Dockerfile              # Container definition
-│  ├─ docker-compose.yml      # Service orchestration
-│  └─ .dockerignore           # Docker ignore rules
-│
-├─ Core Scripts
-│  ├─ system-restore-toolkit  # Main entry point (NEW)
-│  ├─ lib/
-│  │  └─ common.sh           # Shared functions (NEW)
-│  └─ manage_restore_points.sh # Legacy script
-│
-├─ Individual Scripts
-│  └─ scripts/
-│     ├─ create_snapshot.sh
-│     ├─ restore_from_snapshot.sh
-│     ├─ full_system_backup.sh
-│     ├─ current_system_state.sh
-│     └─ setup_timeshift.sh
-│
-├─ Configuration
-│  └─ configs/
-│     └─ timeshift.json
-│
-├─ Data Directories
-│  ├─ backups/               # Backup storage
-│  └─ logs/                  # Log files (NEW)
-│
-├─ Web Interface
-│  └─ web-interface/
-│     ├─ app.py             # Flask application
-│     ├─ templates/         # HTML templates
-│     └─ static/            # CSS, JS, assets
-│
-├─ Installation & Documentation
-│  ├─ install.sh             # Installation script (NEW)
-│  ├─ README.md              # This file
-│  ├─ RESTORE_POINT_GUIDE.md # Detailed restore guide
-│  ├─ GLOBAL_ACCESS.md       # Access configuration
-│  └─ CONTRIBUTING.md        # Contribution guidelines
-│
-└─ Version Control
-   ├─ .git/                  # Git repository
-   ├─ .gitignore             # Git ignore rules
-   └─ .dockerignore          # Docker ignore rules
+
+📁 Docker Files
+  - Dockerfile                    # Container definition
+  - docker-compose.yml            # Service orchestration
+  - .dockerignore                 # Docker ignore rules
+
+📁 Core Scripts
+  - system-restore-toolkit        # Main entry point (NEW)
+  - lib/common.sh                 # Shared functions (NEW)
+  - manage_restore_points.sh      # Legacy script
+
+📁 Individual Scripts
+  - scripts/
+    - create_snapshot.sh
+    - restore_from_snapshot.sh
+    - full_system_backup.sh
+    - current_system_state.sh
+    - setup_timeshift.sh
+
+📁 Configuration
+  - configs/
+    - timeshift.json
+
+📁 Data Directories
+  - backups/                      # Backup storage
+  - logs/                         # Log files (NEW)
+
+📁 Web Interface
+  - web-interface/
+    - app.py                      # Flask application
+    - templates/                  # HTML templates
+    - static/                     # CSS, JS, assets
+
+📁 Installation & Documentation
+  - install.sh                   # Installation script (NEW)
+  - README.md                    # This file
+  - RESTORE_POINT_GUIDE.md       # Detailed restore guide
+  - GLOBAL_ACCESS.md             # Access configuration
+  - CONTRIBUTING.md              # Contribution guidelines
+
+📁 Version Control
+  - .git/                        # Git repository
+  - .gitignore                   # Git ignore rules
+  - .dockerignore                # Docker ignore rules
+```
 ```
 ```
     ├── .git/                  # Git repository
