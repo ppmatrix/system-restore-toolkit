@@ -203,27 +203,41 @@ docker run --rm -it --privileged \
 ```
 
 ## 📁 Project Structure
-```
-<pre>
-system-restore-toolkit/
-├── backups/
-│   ├── full-backup-20250811_201654.tar.gz
-│   └── README.md
-├── configs/
-│   └── timeshift.json
-├── host-scripts/
-│   ├── timeshift-list.sh
-│   ├── timeshift-proxy.sh
-│   ├── timeshift-simple.py
-│   ├── timeshift-to-json.py
-│   └── update-timeshift-data.py
-├── lib/
-│   └── common.sh
-├── scripts/
-│   ├── current_system_state.sh
-│   └── setup_timeshift.sh
-│   └── common.sh
-├── logs/
-│   ├── README.md
-│   ├── toolkit-20250811.log
-│   └── toolkit-20250812.log
+📂backups
+ ┣ 📜README.md
+ ┗ 📜full-backup-20250811_201654.tar.gz
+📂configs
+ ┗ 📜timeshift.json
+📂host-scripts
+ ┣ 📜timeshift-list.sh
+ ┣ 📜timeshift-proxy.sh
+ ┣ 📜timeshift-simple.py
+ ┣ 📜timeshift-to-json.py
+ ┗ 📜update-timeshift-data.py
+📂lib
+ ┗ 📜common.sh
+📂logs
+ ┣ 📜README.md
+ ┣ 📜toolkit-20250811.log
+📂scripts
+ ┣ 📜current_system_state.sh
+ ┗ 📜setup_timeshift.sh
+📂shared-data
+ ┗ 📜timeshift-info.json
+📂web-interface
+ ┣ 📂backups
+ ┣ 📂logs
+ ┣ 📂static
+ ┃  ┣ 📂css
+ ┃  ┃  ┗ 📜style.css
+ ┃  ┣ 📂images
+ ┃  ┃  ┗ 📜STRlogo.png
+ ┃  ┗ 📂js
+ ┃     ┗ 📜app.js
+ ┗ 📂templates
+    ┣ 📜backups.html
+    ┣ 📜base.html
+    ┣ 📜dashboard.html
+    ┣ 📜dashboard.html.backup
+    ┣ 📜logs.html
+    ┗ 📜timeshift.html
