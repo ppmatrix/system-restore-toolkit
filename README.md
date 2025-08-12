@@ -206,6 +206,73 @@ docker run --rm -it --privileged \
 
 ```
 system-restore-toolkit/
+├── backups/
+│   ├── full-backup-20250811_201654.tar.gz
+│   └── README.md
+├── configs/
+│   └── timeshift.json
+├── host-scripts/
+│   ├── timeshift-list.sh
+│   ├── timeshift-proxy.sh
+│   ├── timeshift-simple.py
+│   ├── timeshift-to-json.py
+│   └── update-timeshift-data.py
+├── lib/
+│   ├── common.sh
+│   └── timeshift_bridge.py
+├── logs/
+│   ├── README.md
+│   ├── toolkit-20250811.log
+│   └── toolkit-20250812.log
+├── scripts/
+│   ├── create_snapshot.sh
+│   ├── current_system_state.sh
+│   ├── full_system_backup.sh
+│   ├── restore_from_snapshot.sh
+│   └── setup_timeshift.sh
+├── shared-data/
+│   └── timeshift-info.json
+├── web-interface/
+│   ├── app.py
+│   ├── requirements.txt
+│   ├── static/
+│   │   ├── css/
+│   │   │   └── style.css
+│   │   ├── images/
+│   │   │   └── STRlogo.png
+│   │   └── js/
+│   │       └── app.js
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── dashboard.html
+│   │   ├── backups.html
+│   │   ├── timeshift.html
+│   │   └── logs.html
+│   ├── Dockerfile
+│   └── venv/
+├── .github/
+│   └── workflows/
+│       └── docker-build.yml
+├── CONTRIBUTING.md
+├── docker-compose.yml
+├── docker-entrypoint.sh
+├── Dockerfile
+├── .dockerignore
+├── .gitignore
+├── GLOBAL_ACCESS.md
+├── install.sh
+├── LICENSE
+├── manage_restore_points.sh
+├── project-status.md
+├── README.md
+├── RESTORE_POINT_GUIDE.md
+├── restore-toolkit
+├── setup-web-interface.sh
+├── switch-display-mode.sh
+├── system-restore-toolkit
+└── timeshift_wrapper.sh
+```
+system-restore-toolkit/
 
 📁 Docker Files
   - Dockerfile                    # Container definition
