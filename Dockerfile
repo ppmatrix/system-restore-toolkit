@@ -33,8 +33,8 @@ COPY . /opt/system-restore-toolkit/
 WORKDIR /opt/system-restore-toolkit
 
 # Make scripts executable
-RUN chmod +x system-restore-toolkit manage_restore_points.sh \
-             restore-toolkit switch-display-mode.sh \
+RUN chmod +x system-restore-toolkit \
+             setup-web-interface.sh \
              scripts/*.sh lib/common.sh
 
 # Create symlinks for global access
