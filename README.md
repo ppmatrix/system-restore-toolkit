@@ -45,7 +45,7 @@ python app.py
 ### Option 1: Docker (Recommended)
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/ppmatrix/system-restore-toolkit.git
 cd system-restore-toolkit
 
 # Build and run with Docker
@@ -182,13 +182,24 @@ sudo chmod +x /opt/system-restore-toolkit/system-restore-toolkit
 
 #### 3. Docker Installation
 ```bash
-# Build image
+# Clone the repository
+git clone <your-repo-url>
+cd system-restore-toolkit
+
+# Build and start with Docker Compose
+docker-compose up -d
+
+# Use the toolkit
+docker exec -it restore-toolkit system-restore-toolkit help
+
+# Alternative: Build image manually
 docker build -t system-restore-toolkit .
 
 # Run with host access
 docker run --rm -it --privileged \
     -v /:/host \
     system-restore-toolkit help
+```
 ```
 
 ## 📁 Project Structure
