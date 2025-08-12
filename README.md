@@ -48,7 +48,7 @@ python app.py
 git clone https://github.com/ppmatrix/system-restore-toolkit.git
 cd system-restore-toolkit
 
-# Build and run with Docker
+# Build and run with Docker Compose
 docker-compose up -d
 
 # Use the toolkit
@@ -183,7 +183,7 @@ sudo chmod +x /opt/system-restore-toolkit/system-restore-toolkit
 #### 3. Docker Installation
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/ppmatrix/system-restore-toolkit.git
 cd system-restore-toolkit
 
 # Build and start with Docker Compose
@@ -206,39 +206,50 @@ docker run --rm -it --privileged \
 
 ```
 system-restore-toolkit/
-├── 🐳 Docker Files
+├── Docker Files
 │   ├── Dockerfile              # Container definition
 │   ├── docker-compose.yml      # Service orchestration
-│   └── .dockerignore          # Docker ignore rules
+│   └── .dockerignore           # Docker ignore rules
 │
-├── 🔧 Core Scripts
+├── Core Scripts
 │   ├── system-restore-toolkit  # Main entry point (NEW)
-│   ├── lib/common.sh          # Shared functions (NEW)
+│   ├── lib/common.sh           # Shared functions (NEW)
 │   └── manage_restore_points.sh # Legacy script
 │
-├── 📜 Individual Scripts
-│   ├── scripts/
-│   │   ├── create_snapshot.sh
-│   │   ├── restore_from_snapshot.sh
-│   │   ├── full_system_backup.sh
-│   │   ├── current_system_state.sh
-│   │   └── setup_timeshift.sh
+├── Individual Scripts
+│   └── scripts/
+│       ├── create_snapshot.sh
+│       ├── restore_from_snapshot.sh
+│       ├── full_system_backup.sh
+│       ├── current_system_state.sh
+│       └── setup_timeshift.sh
 │
-├── ⚙️ Configuration
+├── Configuration
 │   └── configs/
 │       └── timeshift.json
 │
-├── 📊 Data Directories
+├── Data Directories
 │   ├── backups/               # Backup storage
 │   └── logs/                  # Log files (NEW)
 │
-├── 🚀 Installation & Docs
-│   ├── install.sh            # Installation script (NEW)
-│   ├── README.md             # This file
-│   ├── RESTORE_POINT_GUIDE.md
-│   └── GLOBAL_ACCESS.md
+├── Web Interface
+│   └── web-interface/
+│       ├── app.py             # Flask application
+│       ├── templates/         # HTML templates
+│       └── static/            # CSS, JS, assets
 │
-└── 🛠️ Git & CI
+├── Installation & Documentation
+│   ├── install.sh             # Installation script (NEW)
+│   ├── README.md              # This file
+│   ├── RESTORE_POINT_GUIDE.md # Detailed restore guide
+│   ├── GLOBAL_ACCESS.md       # Access configuration
+│   └── CONTRIBUTING.md        # Contribution guidelines
+│
+└── Version Control
+    ├── .git/                  # Git repository
+    ├── .gitignore             # Git ignore rules
+    └── .dockerignore          # Docker ignore rules
+```
     ├── .gitignore
     └── .dockerignore
 ```
